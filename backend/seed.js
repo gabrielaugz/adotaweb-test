@@ -5,11 +5,10 @@ const path = require('path');
 const { Pool } = require('pg');
 
 const pool = new Pool({
-  host:     process.env.DB_HOST,
-  port:     Number(process.env.DB_PORT),
-  database: process.env.DB_NAME,
-  user:     process.env.DB_USER,
-  password: String(process.env.DB_PASS),
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 async function seedTypes() {
