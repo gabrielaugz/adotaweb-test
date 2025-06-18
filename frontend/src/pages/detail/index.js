@@ -4,7 +4,7 @@ import { useParams, Navigate, useNavigate } from 'react-router-dom';
 
 const PetDetailsPage = () => {
   //window.scrollTo(0, 0);
-  const [data, setData] = useState();
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [showAdoptionForm, setShowAdoptionForm] = useState(false);
