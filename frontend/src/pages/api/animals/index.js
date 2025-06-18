@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   try {
     // Exemplo: filtra por type.name e faz busca por nome/descrição
     const sql = `
-      SELECT a.id, a.name, a.age, a.gender, a.size, a.primary_color, a.mixed
+      SELECT a.id, a.name, a.age, a.gender, a.size, a.primary_color, a.breed
       FROM animals a
       JOIN types t ON a.type_id = t.id
       WHERE ($1 = '' OR t.name = $1)

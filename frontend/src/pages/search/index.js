@@ -15,7 +15,7 @@ export default function SearchPage() {
   const cityQuery  = searchParams.get('city')      || '';
   const vaccinated = searchParams.get('vaccinated') || '';
   const neutered   = searchParams.get('neutered')   || '';
-  const mixed      = searchParams.get('mixed')      || '';
+  const breed      = searchParams.get('breed')      || '';
   const puppy      = searchParams.get('puppy')      || '';
 
   const [data, setData] = useState(null);
@@ -27,7 +27,7 @@ export default function SearchPage() {
       city: cityQuery,
       vaccinated,
       neutered,
-      mixed,
+      breed,
       puppy
     })
       .then(setData)
@@ -35,7 +35,7 @@ export default function SearchPage() {
         console.error(err);
         setData([]);
       });
-  }, [cityQuery, vaccinated, neutered, mixed, puppy]);
+  }, [cityQuery, vaccinated, neutered, breed, puppy]);
 
   function updateFilter(key, value) {
     const next = new URLSearchParams(searchParams);
@@ -59,7 +59,7 @@ export default function SearchPage() {
         {[
           { label: 'Vacinado',     key: 'vaccinated', value: vaccinated },
           { label: 'Castrado',     key: 'neutered',   value: neutered   },
-          { label: 'Raça definida',key: 'mixed',      value: mixed      },
+          { label: 'Raça definida',key: 'breed',      value: breed      },
           { label: 'Filhote',      key: 'puppy',      value: puppy      }
         ].map(({ label, key, value }) => (
           <div className="filter-group" key={key}>

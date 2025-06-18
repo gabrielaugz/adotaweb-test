@@ -91,7 +91,7 @@ const PetDetailsPage = () => {
             </div>
             <div className="pet-detail-info">
               <h1>{data.name}</h1>
-              <p><b>Raça:</b> {data.breeds.mixed ? 'Vira-lata' : 'Raça não definida'}</p>
+              <p><b>Raça:</b> {data.breeds.breed ? 'Vira-lata' : 'Raça não definida'}</p>
               <p><b>Cor:</b> {data.colors.primary || 'Desconhecida'}</p>
               <p><b>Sexo:</b> {data.gender === 'Male' ? 'Macho' : 
                         data.gender === 'Female' ? 'Fêmea' : 

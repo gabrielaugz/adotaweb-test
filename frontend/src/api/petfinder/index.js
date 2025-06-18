@@ -18,7 +18,7 @@ export const getPets = async ({
   city = '',
   vaccinated = '',
   neutered = '',
-  mixed = '',
+  breed = '',
   puppy = ''
 } = {}) => {
   const params = new URLSearchParams();
@@ -27,7 +27,7 @@ export const getPets = async ({
   if (city)              params.append('city',       city);
   if (vaccinated !== '') params.append('vaccinated', vaccinated);
   if (neutered !== '')   params.append('neutered',   neutered);
-  if (mixed !== '')      params.append('mixed',      mixed);
+  if (breed !== '')      params.append('breed',      breed);
   if (puppy !== '')      params.append('puppy',      puppy);
 
   // Faz a chamada já devolvendo apenas o array de animals

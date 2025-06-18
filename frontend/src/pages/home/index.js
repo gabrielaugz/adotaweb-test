@@ -15,19 +15,19 @@ export default function HomePage() {
   const cityQuery  = searchParams.get('city')      || '';
   const vaccinated = searchParams.get('vaccinated') || '';
   const neutered   = searchParams.get('neutered')   || '';
-  const mixed      = searchParams.get('mixed')      || '';
+  const breed      = searchParams.get('breed')      || '';
   const puppy      = searchParams.get('puppy')      || '';
 
   // Carrega pets sempre que qualquer filtro mudar
   useEffect(() => {
     setData(null);
-    getPets({ type, city: cityQuery, vaccinated, neutered, mixed, puppy })
+    getPets({ type, city: cityQuery, vaccinated, neutered, breed, puppy })
       .then(setData)
       .catch(err => {
         console.error(err);
         setData([]);
       });
-  }, [type, cityQuery, vaccinated, neutered, mixed, puppy]);
+  }, [type, cityQuery, vaccinated, neutered, breed, puppy]);
 
   // atualiza só um filtro na URL
   function updateFilter(key, value) {
@@ -51,7 +51,7 @@ export default function HomePage() {
         {[
           { label: 'Vacinado',   key: 'vaccinated', value: vaccinated },
           { label: 'Castrado',   key: 'neutered',   value: neutered   },
-          { label: 'Raça definida', key: 'mixed', value: mixed },
+          { label: 'Raça definida', key: 'breed', value: breed },
           { label: 'Filhote',    key: 'puppy',      value: puppy     }
         ].map(({ label, key, value }) => (
           <div className="filter-group" key={key}>
@@ -86,7 +86,7 @@ export default function HomePage() {
                   />
                 </div>
                 <h3>{animal.name}</h3>
-                <p><b>Raça:</b> {animal.mixed ? 'Vira-lata' : 'Raça não definida'}</p>
+                <p><b>Raça:</b> {animal.breed ? 'Vira-lata' : 'Raça não definida'}</p>
                 <p><b>Cor:</b>   {animal.primary_color || 'Desconhecida'}</p>
                 <p><b>Sexo:</b>{' '}
                   {animal.gender === 'Male'   ? 'Macho' :
