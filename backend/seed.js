@@ -1,4 +1,4 @@
-// seed.js (CommonJS)
+// seed.js
 require('dotenv').config();
 const fs   = require('fs').promises;
 const path = require('path');
@@ -112,8 +112,8 @@ async function seedAnimals() {
         a.status,
         a.status_changed_at,
         a.published_at,
-        JSON.stringify(a.tags || []),    // <-- este é o $30
-        JSON.stringify(a.videos || [])   // <-- este é o $31
+        JSON.stringify(a.tags || []),
+        JSON.stringify(a.videos || [])
       ]
     );
   }
@@ -135,7 +135,7 @@ async function seedContacts() {
     const addr = a.contact?.address;
     if (!addr?.city) continue;
 
-    // insere/recupera endereço
+    // acha ou insere endereço
     const { rows: foundAddrs } = await pool.query(
       `SELECT id FROM addresses WHERE city = $1 AND state = $2`,
       [addr.city, addr.state]
@@ -153,11 +153,10 @@ async function seedContacts() {
       addressId = ins[0].id;
     }
 
-    // insere contato (uma vez por animal)
+    // já verificamos duplicidade lá em cima, então inserimos simplesmente:
     await pool.query(
       `INSERT INTO contacts(animal_id, email, phone, address_id)
-         VALUES ($1,$2,$3,$4)
-       ON CONFLICT(animal_id) DO NOTHING`,
+         VALUES ($1,$2,$3,$4)`,
       [a.id, a.contact.email, a.contact.phone, addressId]
     );
   }
