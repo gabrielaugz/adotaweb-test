@@ -86,7 +86,7 @@ export default function HomePage() {
                   />
                 </div>
                 <h3>{animal.name}</h3>
-                <p><b>Raça:</b> {animal.primary_breed || 'Desconhecida'}</p>
+                <p><b>Raça:</b> {animal.mixed ? 'Vira-lata' : 'Raça não definida'}</p>
                 <p><b>Cor:</b>   {animal.primary_color || 'Desconhecida'}</p>
                 <p><b>Sexo:</b>{' '}
                   {animal.gender === 'Male'   ? 'Macho' :
