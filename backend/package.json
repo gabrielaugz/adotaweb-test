@@ -1,0 +1,14 @@
+{
+  "name": "adotaweb-backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "seed": "node seed.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "pg":      "^8.16.0",
+    "dotenv":  "^16.5.0"
+  }
+}

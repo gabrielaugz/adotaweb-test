@@ -1,0 +1,55 @@
+.page-title {
+  text-align: center;
+  color: #d48835;
+  margin-top: 1rem;
+}
+
+.filters-container {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin: 1rem 0;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.filter-group label {
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.filter-group select {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #d48835;
+  border-radius: 20px;
+  background: white;
+  color: #333;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.filter-group select:hover {
+  background: #f9f3ee;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    /* no lugar de grid-column-gap / grid-row-gap, use gap: [linha] [coluna] */
+    gap: 2rem 1.5rem;    /* 2rem de espaçamento vertical, 1.5rem horizontal */
+    padding: 0 1rem;     /* mantém padding nas laterais */
+    margin-bottom: 2rem; /* mantém o espaçamento embaixo da grid */
+    display: grid;
+    /* colunas de largura fixa 240px, no máximo auto (ou seja, só o suficiente) */
+    grid-template-columns: repeat(auto-fit, minmax(240px, auto));
+    /* espaçamento vertical e horizontal */
+    gap: 2rem 1.5rem;
+    /* centraliza todo o bloco de colunas quando couberem poucas */
+    justify-content: center;
+    padding: 0 1rem;
+    margin-bottom: 2rem;
+}
