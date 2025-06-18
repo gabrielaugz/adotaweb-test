@@ -41,23 +41,21 @@ app.get('/api/animals', async (req, res) => {
   } = req.query
 
   try {
-  const sql = `
-    SELECT
-      a.id,
-      t.name       AS type,
-     a.name,
-     a.age,
-     a.gender,
-     a.size,
-    a.primary_color,
-    a.primary_breed,
-      /* se não achar em photos, usa o próprio a.url */
-     COALESCE(p.url_medium, a.url) AS "photoUrl",
-     addr.city,
-      addr.state,
-      a.shots_current,
-      a.spayed_neutered,
-      a.mixed
+    const sql = `
+      SELECT
+        a.id,
+        t.name       AS type,
+        a.name,
+        a.age,
+        a.gender,
+        a.size,
+        a.primary_color,
+        p.url_medium AS "photoUrl",
+        addr.city,
+        addr.state,
+        a.shots_current,
+        a.spayed_neutered,
+        a.mixed
       FROM animals a
       JOIN types t   ON a.type_id = t.id
       LEFT JOIN LATERAL (
