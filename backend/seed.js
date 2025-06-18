@@ -12,6 +12,7 @@ const pool = new Pool({
 async function seedTypes() {
   const file = path.join(__dirname, 'src', 'mocks', 'data', 'types.json');
   const { types } = JSON.parse(await fs.readFile(file, 'utf8'));
+
   for (const t of types) {
     await pool.query(
       `INSERT INTO types(name)
@@ -20,6 +21,7 @@ async function seedTypes() {
       [t.name]
     );
   }
+
   console.log('✅ types seeded');
 }
 
@@ -28,6 +30,7 @@ async function seedAnimals() {
   const { animals } = JSON.parse(await fs.readFile(file, 'utf8'));
 
   for (const a of animals) {
+    // busca o type_id
     const { rows: typeRows } = await pool.query(
       `SELECT id FROM types WHERE name = $1`,
       [a.type]
@@ -38,6 +41,7 @@ async function seedAnimals() {
     }
     const type_id = typeRows[0].id;
 
+    // insere o animal sem as colunas deletadas
     await pool.query(
       `INSERT INTO animals(
          id,
@@ -49,18 +53,11 @@ async function seedAnimals() {
          age,
          gender,
          size,
-         coat,
          primary_color,
          secondary_color,
          tertiary_color,
-         primary_breed,
-         secondary_breed,
-         mixed,
-         unknown,
+         breed,
          spayed_neutered,
-         house_trained,
-         declawed,
-         special_needs,
          shots_current,
          children,
          dogs,
@@ -68,18 +65,14 @@ async function seedAnimals() {
          organization_animal_id,
          status,
          status_changed_at,
-         published_at,
-         tags,
-         videos
+         published_at
        ) VALUES (
          $1,$2,$3,$4,
-         $5,$6,$7,$8,$9,$10,
-         $11,$12,$13,
-         $14,$15,$16,$17,
-         $18,$19,$20,$21,$22,
-         $23,$24,$25,
-         $26,$27,$28,
-         $29,$30,$31
+         $5,$6,$7,$8,$9,
+         $10,$11,$12,
+         $13,$14,$15,$16,
+         $17,$18,$19,
+         $20,$21,$22
        )
        ON CONFLICT(id) DO NOTHING`,
       [
@@ -92,18 +85,11 @@ async function seedAnimals() {
         a.age,
         a.gender,
         a.size,
-        a.coat,
         a.colors.primary,
         a.colors.secondary,
         a.colors.tertiary,
-        a.breeds.primary,
-        a.breeds.secondary,
-        a.breeds.mixed,
-        a.breeds.unknown,
+        a.breeds.breed,              // antes era mixed
         a.attributes.spayed_neutered,
-        a.attributes.house_trained,
-        a.attributes.declawed,
-        a.attributes.special_needs,
         a.attributes.shots_current,
         a.environment.children,
         a.environment.dogs,
@@ -111,12 +97,11 @@ async function seedAnimals() {
         a.organization_animal_id,
         a.status,
         a.status_changed_at,
-        a.published_at,
-        JSON.stringify(a.tags || []),
-        JSON.stringify(a.videos || [])
+        a.published_at
       ]
     );
   }
+
   console.log('✅ animals seeded');
 }
 
@@ -125,7 +110,7 @@ async function seedContacts() {
   const { animals } = JSON.parse(await fs.readFile(file, 'utf8'));
 
   for (const a of animals) {
-    // só insere contato se o animal já existe
+    // insere contato só se o animal existir
     const { rows: exists } = await pool.query(
       `SELECT 1 FROM animals WHERE id = $1`,
       [a.id]
@@ -153,13 +138,14 @@ async function seedContacts() {
       addressId = ins[0].id;
     }
 
-    // já verificamos duplicidade lá em cima, então inserimos simplesmente:
+    // insere o contato
     await pool.query(
       `INSERT INTO contacts(animal_id, email, phone, address_id)
          VALUES ($1,$2,$3,$4)`,
       [a.id, a.contact.email, a.contact.phone, addressId]
     );
   }
+
   console.log('✅ contacts seeded');
 }
 

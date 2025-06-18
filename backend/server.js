@@ -46,7 +46,7 @@ if (process.env.NODE_ENV === 'production') {
 
 /**
  * GET /api/animals
- * Lista animais com filtros (type, city, vaccinated, neutered, mixed, puppy).
+ * Lista animais com filtros (type, city, vaccinated, neutered, breed, puppy).
  */
 app.get('/api/animals', async (req, res) => {
   const {
@@ -54,7 +54,7 @@ app.get('/api/animals', async (req, res) => {
     city    = '',
     vaccinated = '',
     neutered   = '',
-    mixed      = '',
+    breed      = '',
     puppy      = ''
   } = req.query
 
@@ -72,7 +72,7 @@ app.get('/api/animals', async (req, res) => {
       addr.state,
       a.shots_current,
       a.spayed_neutered,
-      a.mixed
+      a.breed
     FROM animals a
     JOIN types t   ON a.type_id = t.id
     LEFT JOIN LATERAL (
@@ -99,8 +99,8 @@ app.get('/api/animals', async (req, res) => {
       )
       AND (
         $5 = '' 
-        OR ($5 = 'true'  AND a.mixed           = TRUE)
-        OR ($5 = 'false' AND a.mixed           = FALSE)
+        OR ($5 = 'true'  AND a.breed           = TRUE)
+        OR ($5 = 'false' AND a.breed           = FALSE)
       )
       AND (
         $6 = '' 
@@ -110,7 +110,7 @@ app.get('/api/animals', async (req, res) => {
     LIMIT 100
   `
   try {
-    const vals = [type, city, vaccinated, neutered, mixed, puppy]
+    const vals = [type, city, vaccinated, neutered, breed, puppy]
     const { rows } = await pool.query(sql, vals)
 
     const animals = rows.map(r => ({
@@ -124,7 +124,7 @@ app.get('/api/animals', async (req, res) => {
       photoUrl:        r.photoUrl,
       shots_current:   r.shots_current,
       spayed_neutered: r.spayed_neutered,
-      mixed:           r.mixed,
+      breed:           r.breed,
       contact: {
         address: {
           city:  r.city  || 'Não informado',
@@ -178,7 +178,7 @@ app.get('/api/animals/:id', async (req, res) => {
         a.primary_color,
         a.secondary_color,
         a.tertiary_color,
-        a.mixed      AS mixed_flag,
+        a.breed      AS breed_flag,
         a.spayed_neutered,
         a.shots_current,
         a.children,
@@ -238,7 +238,7 @@ app.get('/api/animals/:id', async (req, res) => {
       size:      row.size,
 
       breeds: {
-        mixed: row.mixed_flag   // true = vira-lata
+        breed: row.breed_flag   // true = vira-lata
       },
 
       colors: {
