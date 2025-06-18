@@ -1,5 +1,6 @@
 // server.js
 require('dotenv').config()
+const path = require('path')
 const express = require('express')
 const { Pool } = require('pg')
 
@@ -16,6 +17,9 @@ const pool = new Pool({
 
 const app = express()
 
+// Permite receber JSON (caso precise num futuro POST/PUT)
+app.use(express.json())
+
 // Middleware CORS básico
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -25,11 +29,20 @@ app.use((req, res, next) => {
   next()
 })
 
-// Pega a porta de ambiente ou 3001 por padrão
-const port = process.env.PORT || process.env.API_PORT || 3001
-app.listen(port, () => {
-  console.log(`🐶 API rodando na porta ${port}`)
-})
+/**
+ * PUBLIC: Servir o build do React em produção
+ * — depois de fazer `cd frontend && yarn build`, certifique-se
+ *   que este diretório exista no deploy.
+ */
+if (process.env.NODE_ENV === 'production') {
+  const buildPath = path.join(__dirname, 'frontend', 'build')
+  app.use(express.static(buildPath))
+  
+  // Qualquer rota não-API cai aqui e devolve o index.html
+  app.get(/^\/(?!api).*/, (_req, res) => {
+    res.sendFile(path.join(buildPath, 'index.html'))
+  })
+}
 
 /**
  * GET /api/animals
@@ -54,7 +67,6 @@ app.get('/api/animals', async (req, res) => {
       a.gender,
       a.size,
       a.primary_color,
-      -- se não tiver foto primária, volta a.url original
       COALESCE(p.url_medium, a.url) AS "photoUrl",
       addr.city,
       addr.state,
@@ -101,7 +113,6 @@ app.get('/api/animals', async (req, res) => {
     const vals = [type, city, vaccinated, neutered, mixed, puppy]
     const { rows } = await pool.query(sql, vals)
 
-    // Ajusta formato esperado pelo front
     const animals = rows.map(r => ({
       id:              r.id,
       type:            r.type,
@@ -155,7 +166,6 @@ app.get('/api/animals/:id', async (req, res) => {
   const { id } = req.params
 
   try {
-    // 1) dados básicos + raças + flags que o front consome
     const detailSql = `
       SELECT
         a.id,
@@ -165,30 +175,15 @@ app.get('/api/animals/:id', async (req, res) => {
         a.age,
         a.gender,
         a.size,
-        a.coat,
         a.primary_color,
         a.secondary_color,
         a.tertiary_color,
-
-        /* campos de raças para montar breeds */
-        a.primary_breed,
-        a.secondary_breed,
         a.mixed      AS mixed_flag,
-        a.unknown    AS unknown_flag,
-
-        /* atributos extras */
         a.spayed_neutered,
-        a.house_trained,
-        a.declawed,
-        a.special_needs,
         a.shots_current,
-
-        /* ambiente */
         a.children,
         a.dogs,
         a.cats,
-
-        /* metadados */
         a.organization_animal_id,
         a.status,
         a.status_changed_at,
@@ -200,11 +195,8 @@ app.get('/api/animals/:id', async (req, res) => {
     `
     const { rows } = await pool.query(detailSql, [id])
     const row = rows[0]
-    if (!row) {
-      return res.status(404).json({ error: 'Pet não encontrado' })
-    }
+    if (!row) return res.status(404).json({ error: 'Pet não encontrado' })
 
-    // 2) fotos
     const photosRes = await pool.query(
       `SELECT
          url_small  AS small,
@@ -217,7 +209,6 @@ app.get('/api/animals/:id', async (req, res) => {
       [id]
     )
 
-    // 3) contato + endereço
     const contactRes = await pool.query(
       `SELECT
          c.email,
@@ -237,7 +228,6 @@ app.get('/api/animals/:id', async (req, res) => {
       [id]
     )
 
-    // 4) monta JSON final
     const animalDetail = {
       id:        row.id,
       type:      row.type,
@@ -246,13 +236,9 @@ app.get('/api/animals/:id', async (req, res) => {
       age:       row.age,
       gender:    row.gender,
       size:      row.size,
-      coat:      row.coat,
 
       breeds: {
-        primary:   row.primary_breed,
-        secondary: row.secondary_breed,
-        mixed:     row.mixed_flag,
-        unknown:   row.unknown_flag
+        mixed: row.mixed_flag   // true = vira-lata
       },
 
       colors: {
@@ -263,9 +249,6 @@ app.get('/api/animals/:id', async (req, res) => {
 
       attributes: {
         spayed_neutered: row.spayed_neutered,
-        house_trained:   row.house_trained,
-        declawed:        row.declawed,
-        special_needs:   row.special_needs,
         shots_current:   row.shots_current
       },
 
@@ -289,4 +272,10 @@ app.get('/api/animals/:id', async (req, res) => {
     console.error(err)
     return res.status(500).json({ error: err.message })
   }
+})
+
+// Inicia o servidor
+const port = process.env.PORT || process.env.API_PORT || 3001
+app.listen(port, () => {
+  console.log(`🐶 API rodando na porta ${port}`)
 })
