@@ -19,7 +19,7 @@ const Pet = ({ animal }) => {
           />
         </div>
         <h3>{animal.name}</h3>
-        <p>Raça: {animal.primary_breed || 'Desconhecida'}</p>
+        <p><b>Raça:</b> {animal.mixed ? 'Vira-lata' : 'Raça não definida'}</p>
         <p>Cor:   {animal.primary_color || 'Desconhecida'}</p>
         <p>
           Sexo:{' '}
