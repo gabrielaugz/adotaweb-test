@@ -4,6 +4,7 @@ const path    = require('path');
 const express = require('express');
 const { Pool } = require('pg');
 
+// Conexão com o Postgres
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production'
@@ -14,7 +15,7 @@ const pool = new Pool({
 const app = express();
 app.use(express.json());
 
-// CORS
+// CORS básico
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin',  '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
@@ -23,9 +24,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// Servir React build em produção
+// Serve React build em produção
 if (process.env.NODE_ENV === 'production') {
-  const buildPath = path.join(__dirname, 'frontend', 'build');
+  // Saindo de src/backend para src/frontend/build
+  const buildPath = path.join(__dirname, '..', 'frontend', 'build');
   app.use(express.static(buildPath));
   app.get(/^\/(?!api).*/, (_req, res) => {
     res.sendFile(path.join(buildPath, 'index.html'));
@@ -34,7 +36,7 @@ if (process.env.NODE_ENV === 'production') {
 
 /**
  * GET /api/animals
- * Lista animais com filtros e traz dados da ONG no campo `contact`.
+ * Lista animais com filtros e inclui dados da ONG em `contact`
  */
 app.get('/api/animals', async (req, res) => {
   const {
@@ -55,9 +57,7 @@ app.get('/api/animals', async (req, res) => {
       a.gender,
       a.size,
       a.primary_color,
-      -- foto principal
       COALESCE(p.url_medium, a.url) AS "photoUrl",
-      -- dados da ONG
       org.email       AS org_email,
       org.phone       AS org_phone,
       org.address1    AS org_address1,
@@ -66,7 +66,6 @@ app.get('/api/animals', async (req, res) => {
       org.state       AS org_state,
       org.postcode    AS org_postcode,
       org.country     AS org_country,
-      -- atributos
       a.shots_current,
       a.spayed_neutered,
       a.breed
@@ -74,14 +73,13 @@ app.get('/api/animals', async (req, res) => {
     LEFT JOIN LATERAL (
       SELECT url_medium
       FROM photos p2
-      WHERE p2.animal_id = a.id
-        AND p2.is_primary
+      WHERE p2.animal_id = a.id AND p2.is_primary
       LIMIT 1
     ) p ON true
     LEFT JOIN organizations org
       ON org.id = a.organization_fk
     WHERE
-      ($1 = '' OR a.type             = $1)
+      ($1 = ''    OR a.type::text        = $1)       -- << cast enum to text
       AND ($2 = '' OR org.city    ILIKE '%'||$2||'%')
       AND (
         $3 = ''
@@ -145,7 +143,7 @@ app.get('/api/animals', async (req, res) => {
 
 /**
  * GET /api/animals/:id
- * Detalhes de um pet, também com dados da ONG.
+ * Detalhes de um pet, com dados da ONG
  */
 app.get('/api/animals/:id', async (req, res) => {
   const { id } = req.params;
@@ -162,7 +160,7 @@ app.get('/api/animals/:id', async (req, res) => {
       a.primary_color,
       a.secondary_color,
       a.tertiary_color,
-      a.breed      AS breed_flag,
+      a.breed           AS breed_flag,
       a.spayed_neutered,
       a.shots_current,
       a.children,
@@ -171,15 +169,14 @@ app.get('/api/animals/:id', async (req, res) => {
       a.status,
       a.status_changed_at,
       a.published_at,
-      -- ONG
-      org.email    AS org_email,
-      org.phone    AS org_phone,
-      org.address1 AS org_address1,
-      org.address2 AS org_address2,
-      org.city     AS org_city,
-      org.state    AS org_state,
-      org.postcode AS org_postcode,
-      org.country  AS org_country
+      org.email       AS org_email,
+      org.phone       AS org_phone,
+      org.address1    AS org_address1,
+      org.address2    AS org_address2,
+      org.city        AS org_city,
+      org.state       AS org_state,
+      org.postcode    AS org_postcode,
+      org.country     AS org_country
     FROM animals a
     LEFT JOIN organizations org
       ON org.id = a.organization_fk
@@ -204,13 +201,13 @@ app.get('/api/animals/:id', async (req, res) => {
     `, [id]);
 
     const animalDetail = {
-      id:        row.id,
-      type:      row.type,
-      name:      row.name,
+      id:          row.id,
+      type:        row.type,
+      name:        row.name,
       description: row.description,
-      age:       row.age,
-      gender:    row.gender,
-      size:      row.size,
+      age:         row.age,
+      gender:      row.gender,
+      size:        row.size,
       breeds: {
         breed: row.breed_flag
       },
