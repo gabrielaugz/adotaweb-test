@@ -21,7 +21,9 @@
         "Yellow / Tan / Blond / Fawn"
       ],
       "genders": ["Male", "Female"],
-              "breeds": { "href": "/v2/types/dog/breeds" }
+      "_links": {
+        "self": { "href": "/v2/types/dog" },
+        "breeds": { "href": "/v2/types/dog/breeds" }
       }
     },
     {
@@ -60,7 +62,9 @@
         "White"
       ],
       "genders": ["Male", "Female"],
-              "breeds": { "href": "/v2/types/cat/breeds" }
+      "_links": {
+        "self": { "href": "/v2/types/cat" },
+        "breeds": { "href": "/v2/types/cat/breeds" }
       }
     }
   ]

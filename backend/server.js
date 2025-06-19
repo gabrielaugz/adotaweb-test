@@ -71,7 +71,7 @@ app.get('/api/animals', async (req, res) => {
     LEFT JOIN contacts c ON c.animal_id = a.id
     LEFT JOIN addresses addr ON c.address_id = addr.id
     WHERE
-      ($1 = '' OR LOWER(a.type) = LOWER($1))
+      ($1 = '' OR LOWER(a.type::text) = LOWER($1))
       AND ($2 = '' OR addr.city ILIKE '%'||$2||'%')
       AND ( $3 = '' OR ( $3 = 'true' AND a.shots_current = TRUE ) OR ( $3 = 'false' AND a.shots_current = FALSE ) )
       AND ( $4 = '' OR ( $4 = 'true' AND a.spayed_neutered = TRUE ) OR ( $4 = 'false' AND a.spayed_neutered = FALSE ) )

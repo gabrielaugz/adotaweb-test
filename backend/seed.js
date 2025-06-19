@@ -13,7 +13,14 @@ async function seedAnimals() {
   const file = path.join(__dirname, 'src', 'mocks', 'data', 'animals.json');
   const { animals } = JSON.parse(await fs.readFile(file, 'utf8'));
 
+  // só vamos semear Cat e Dog
+  const allowed = ['Cat','Dog'];
+
   for (const a of animals) {
+    if (!allowed.includes(a.type)) {
+      console.warn(`⏭️ Skip tipo inválido: ${a.type} (id=${a.id})`);
+      continue;
+    }
     // agora usamos diretmente a.string enum em animals.type
     await pool.query(
       `INSERT INTO animals(
