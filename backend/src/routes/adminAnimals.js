@@ -9,6 +9,7 @@ const {
 } = require('../lib/animals');
 
 // GET  /api/admin/animals
+// Lista todos os animais da ONG autenticada
 router.get('/', async (req, res) => {
   try {
     const rows = await getAll(req.organization.id);
@@ -20,6 +21,7 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/admin/animals
+// Cria um novo animal para esta ONG
 router.post('/', async (req, res) => {
   try {
     const novo = await createAnimal(req.organization.id, req.body);
@@ -31,9 +33,11 @@ router.post('/', async (req, res) => {
 });
 
 // PUT  /api/admin/animals/:id
+// Atualiza um animal existente (se pertencer a esta ONG)
 router.put('/:id', async (req, res) => {
+  const { id } = req.params;
   try {
-    const atualizado = await updateAnimal(req.params.id, req.organization.id, req.body);
+    const atualizado = await updateAnimal(id, req.organization.id, req.body);
     if (!atualizado) {
       return res.status(404).json({ error: 'Animal não encontrado ou sem permissão' });
     }
@@ -45,9 +49,11 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /api/admin/animals/:id
+// Marca como invisível (soft delete) ou remove completamente
 router.delete('/:id', async (req, res) => {
+  const { id } = req.params;
   try {
-    const ok = await removeAnimal(req.params.id, req.organization.id);
+    const ok = await removeAnimal(id, req.organization.id);
     if (!ok) {
       return res.status(404).json({ error: 'Animal não encontrado ou sem permissão' });
     }
