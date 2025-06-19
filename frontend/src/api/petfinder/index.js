@@ -21,19 +21,19 @@ export const getPets = async ({
 } = {}) => {
   const params = new URLSearchParams();
 
-  let typeParam = '';
-  if (type) {
-    typeParam = type[0].toUpperCase() + type.slice(1).toLowerCase();
-  }
+  // normaliza "dog" → "Dog", "cat" → "Cat"
+  const typeParam = type
+    ? type[0].toUpperCase() + type.slice(1).toLowerCase()
+    : '';
 
-  if (typeParam)         params.append('type',       typeParam);
-  if (city)              params.append('city',       city);
-  if (vaccinated !== '') params.append('vaccinated', vaccinated);
-  if (neutered !== '')   params.append('neutered',   neutered);
-  if (breed !== '')      params.append('breed',      breed);
-  if (puppy !== '')      params.append('puppy',      puppy);
+  // **só** um append de type
+  if (typeParam)    params.append('type',       typeParam);
+  if (city)         params.append('city',       city);
+  if (vaccinated)   params.append('vaccinated', vaccinated);
+  if (neutered)     params.append('neutered',   neutered);
+  if (breed)        params.append('breed',      breed);
+  if (puppy)        params.append('puppy',      puppy);
 
-  // Faz a chamada já devolvendo apenas o array de animals
   const { animals } = await fetchJSON(
     `${API}/animals?${params.toString()}`
   );
