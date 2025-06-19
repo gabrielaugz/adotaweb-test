@@ -2,14 +2,8 @@
 require('dotenv').config();
 const path    = require('path');
 const express = require('express');
-const { Pool } = require('pg');
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production'
-    ? { rejectUnauthorized: false }
-    : false
-});
+const pool = require('./lib/db');
+const authRoutes = require('./routes/auth');
 
 const app = express();
 app.use(express.json());
@@ -22,6 +16,8 @@ app.use((req, res, next) => {
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
+
+app.use('/auth', authRoutes);
 
 // Serve React build em produção (ajuste conforme seu layout de pastas)
 if (process.env.NODE_ENV === 'production') {
