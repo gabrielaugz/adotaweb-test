@@ -28,8 +28,14 @@ async function create(orgId, data) {
     organization_fk,${cols.join(',')},status_changed_at,published_at
   ) VALUES ($1,${placeholders.join(',')},NOW(),NOW()) RETURNING *`;
 
-  const { rows } = await pool.query(sql, values);
-  return rows[0];
+  const { rows } = await pool.query(
+    `SELECT *
+        FROM animals
+    WHERE organization_fk = $1
+    ORDER BY id`,
+        [orgId]
+    );
+  return rows;
 }
 
 async function update(id, orgId, data) {
