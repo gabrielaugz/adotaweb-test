@@ -24,22 +24,48 @@ async function getAll(orgId) {
  * @returns {Promise<object>} animal criado
  */
 async function create(orgId, data) {
+  // Desestrutura campos, incluindo aninhados
+  const {
+    url,
+    type,
+    name,
+    description,
+    age,
+    gender,
+    size,
+    breeds: { mixed: breed = false } = {},
+    colors: { primary: primary_color = null, secondary: secondary_color = null, tertiary: tertiary_color = null } = {},
+    attributes: { spayed_neutered = false, shots_current = false } = {},
+    environment: { children = false, dogs = false, cats = false } = {},
+    organization_animal_id = null,
+    status
+  } = data;
+
   const cols = [
+    'organization_fk',
     'url','type','name','description','age','gender','size',
     'primary_color','secondary_color','tertiary_color',
     'breed','spayed_neutered','shots_current',
-    'children','dogs','cats','organization_animal_id','status'
+    'children','dogs','cats','organization_animal_id','status',
+    'status_changed_at','published_at'
   ];
 
-  const placeholders = cols.map((_, i) => `$${i+2}`);
-  const values = cols.map(c => data[c]);
-  values.unshift(orgId);
+  // Somente 19 placeholders para os dados, depois usamos NOW() para timestamps
+  const placeholders = Array.from({ length: 19 }, (_, i) => `$${i+1}`);
+  const values = [
+    orgId,
+    url, type, name, description,
+    age, gender, size,
+    primary_color, secondary_color, tertiary_color,
+    breed, spayed_neutered, shots_current,
+    children, dogs, cats, organization_animal_id, status
+  ];
 
-  const sql = `INSERT INTO animals(
-    organization_fk, ${cols.join(',')}, status_changed_at, published_at
-  ) VALUES (
-    $1, ${placeholders.join(',')}, NOW(), NOW()
-  ) RETURNING *`;
+  const sql = `
+    INSERT INTO animals(${cols.join(',')})
+    VALUES(${placeholders.join(',')}, NOW(), NOW())
+    RETURNING *
+  `;
 
   const { rows } = await pool.query(sql, values);
   return rows[0];
@@ -54,19 +80,20 @@ async function create(orgId, data) {
  */
 async function update(id, orgId, data) {
   const fields = Object.keys(data);
-  if (!fields.length) return null;
+  if (fields.length === 0) return null;
 
-  const setClause = fields
-    .map((f, i) => `"${f}"=$${i+3}`)
-    .join(', ');
+  const assignments = fields.map((f, i) => `"${f}"=$${i+3}`);
   const values = fields.map(f => data[f]);
-  values.unshift(orgId); // $2
-  values.unshift(id);    // $1
+  // id = $1, orgId = $2
+  values.unshift(orgId);
+  values.unshift(id);
 
-  const sql = `UPDATE animals
-    SET ${setClause}, status_changed_at = NOW()
-    WHERE id = $1 AND organization_fk = $2
-    RETURNING *`;
+  const sql = `
+    UPDATE animals
+       SET ${assignments.join(',')}, status_changed_at = NOW()
+     WHERE id = $1 AND organization_fk = $2
+     RETURNING *
+  `;
 
   const { rows } = await pool.query(sql, values);
   return rows[0] || null;
@@ -80,8 +107,7 @@ async function update(id, orgId, data) {
  */
 async function remove(id, orgId) {
   const { rowCount } = await pool.query(
-    `DELETE FROM animals
-     WHERE id = $1 AND organization_fk = $2`,
+    `DELETE FROM animals WHERE id = $1 AND organization_fk = $2`,
     [id, orgId]
   );
   return rowCount > 0;
