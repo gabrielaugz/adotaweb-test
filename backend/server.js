@@ -1,52 +1,40 @@
 // server.js
-require('dotenv').config()
-const path = require('path')
-const express = require('express')
-const { Pool } = require('pg')
+require('dotenv').config();
+const path    = require('path');
+const express = require('express');
+const { Pool } = require('pg');
 
-/**
- * Conexão com o PostgreSQL. Em produção (NODE_ENV=production)
- * habilita SSL sem validar certificado (Render/Heroku).
- */
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: process.env.NODE_ENV === 'production'
     ? { rejectUnauthorized: false }
     : false
-})
+});
 
-const app = express()
+const app = express();
+app.use(express.json());
 
-// Permite receber JSON (caso precise num futuro POST/PUT)
-app.use(express.json())
-
-// Middleware CORS básico
+// CORS
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
-  if (req.method === 'OPTIONS') return res.sendStatus(204)
-  next()
-})
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
 
-/**
- * PUBLIC: Servir o build do React em produção
- * — depois de fazer `cd frontend && yarn build`, certifique-se
- *   que este diretório exista no deploy.
- */
+// Serve React build in production
 if (process.env.NODE_ENV === 'production') {
-  const buildPath = path.join(__dirname, 'frontend', 'build')
-  app.use(express.static(buildPath))
-  
-  // Qualquer rota não-API cai aqui e devolve o index.html
+  const buildPath = path.join(__dirname, 'frontend', 'build');
+  app.use(express.static(buildPath));
   app.get(/^\/(?!api).*/, (_req, res) => {
-    res.sendFile(path.join(buildPath, 'index.html'))
-  })
+    res.sendFile(path.join(buildPath, 'index.html'));
+  });
 }
 
 /**
  * GET /api/animals
- * Lista animais com filtros (type, city, vaccinated, neutered, breed, puppy).
+ * List with filters: type, city, vaccinated, neutered, breed, puppy
  */
 app.get('/api/animals', async (req, res) => {
   const {
@@ -56,12 +44,12 @@ app.get('/api/animals', async (req, res) => {
     neutered   = '',
     breed      = '',
     puppy      = ''
-  } = req.query
+  } = req.query;
 
   const sql = `
     SELECT
       a.id,
-      t.name       AS type,
+      a.type,
       a.name,
       a.age,
       a.gender,
@@ -74,44 +62,27 @@ app.get('/api/animals', async (req, res) => {
       a.spayed_neutered,
       a.breed
     FROM animals a
-    JOIN types t   ON a.type_id = t.id
     LEFT JOIN LATERAL (
       SELECT url_medium
       FROM photos p2
-      WHERE p2.animal_id = a.id
-        AND p2.is_primary
+      WHERE p2.animal_id = a.id AND p2.is_primary
       LIMIT 1
     ) p ON true
-    LEFT JOIN contacts c     ON c.animal_id  = a.id
+    LEFT JOIN contacts c ON c.animal_id = a.id
     LEFT JOIN addresses addr ON c.address_id = addr.id
-    WHERE 
-      ($1 = '' OR LOWER(t.name) = LOWER($1))
+    WHERE
+      ($1 = '' OR LOWER(a.type) = LOWER($1))
       AND ($2 = '' OR addr.city ILIKE '%'||$2||'%')
-      AND (
-        $3 = '' 
-        OR ($3 = 'true'  AND a.shots_current    = TRUE)
-        OR ($3 = 'false' AND a.shots_current    = FALSE)
-      )
-      AND (
-        $4 = '' 
-        OR ($4 = 'true'  AND a.spayed_neutered = TRUE)
-        OR ($4 = 'false' AND a.spayed_neutered = FALSE)
-      )
-      AND (
-        $5 = '' 
-        OR ($5 = 'true'  AND a.breed           = TRUE)
-        OR ($5 = 'false' AND a.breed           = FALSE)
-      )
-      AND (
-        $6 = '' 
-        OR ($6 = 'true'  AND a.age = 'Baby')
-        OR ($6 = 'false' AND a.age <> 'Baby')
-      )
+      AND ( $3 = '' OR ( $3 = 'true' AND a.shots_current = TRUE ) OR ( $3 = 'false' AND a.shots_current = FALSE ) )
+      AND ( $4 = '' OR ( $4 = 'true' AND a.spayed_neutered = TRUE ) OR ( $4 = 'false' AND a.spayed_neutered = FALSE ) )
+      AND ( $5 = '' OR ( $5 = 'true' AND a.breed = TRUE ) OR ( $5 = 'false' AND a.breed = FALSE ) )
+      AND ( $6 = '' OR ( $6 = 'true' AND a.age = 'Baby' ) OR ( $6 = 'false' AND a.age <> 'Baby' ) )
     LIMIT 100
-  `
+  `;
+
   try {
-    const vals = [type, city, vaccinated, neutered, breed, puppy]
-    const { rows } = await pool.query(sql, vals)
+    const vals = [type, city, vaccinated, neutered, breed, puppy];
+    const { rows } = await pool.query(sql, vals);
 
     const animals = rows.map(r => ({
       id:              r.id,
@@ -131,45 +102,27 @@ app.get('/api/animals', async (req, res) => {
           state: r.state || ''
         }
       }
-    }))
+    }));
 
-    return res.json({ animals })
+    return res.json({ animals });
   } catch (err) {
-    console.error(err)
-    return res.status(500).json({ error: err.message })
+    console.error(err);
+    return res.status(500).json({ error: err.message });
   }
-})
-
-/**
- * GET /api/types
- * Retorna todos os tipos de animal (gato, cachorro, etc).
- */
-app.get('/api/types', async (req, res) => {
-  try {
-    const { rows } = await pool.query(
-      `SELECT id, name
-         FROM types
-        ORDER BY name`
-    )
-    return res.json({ types: rows })
-  } catch (err) {
-    console.error(err)
-    return res.status(500).json({ error: err.message })
-  }
-})
+});
 
 /**
  * GET /api/animals/:id
- * Retorna detalhes completos de UM animal.
+ * Detailed info for one animal
  */
 app.get('/api/animals/:id', async (req, res) => {
-  const { id } = req.params
+  const { id } = req.params;
 
   try {
     const detailSql = `
       SELECT
         a.id,
-        t.name           AS type,
+        a.type,
         a.name,
         a.description,
         a.age,
@@ -189,25 +142,20 @@ app.get('/api/animals/:id', async (req, res) => {
         a.status_changed_at,
         a.published_at
       FROM animals a
-      JOIN types t ON a.type_id = t.id
       WHERE a.id = $1
       LIMIT 1
-    `
-    const { rows } = await pool.query(detailSql, [id])
-    const row = rows[0]
-    if (!row) return res.status(404).json({ error: 'Pet não encontrado' })
+    `;
+    const { rows } = await pool.query(detailSql, [id]);
+    const row = rows[0];
+    if (!row) return res.status(404).json({ error: 'Pet não encontrado' });
 
     const photosRes = await pool.query(
-      `SELECT
-         url_small  AS small,
-         url_medium AS medium,
-         url_large  AS large,
-         url_full   AS full
-       FROM photos
-       WHERE animal_id = $1
-       ORDER BY slot`,
+      `SELECT url_small AS small, url_medium AS medium, url_large AS large, url_full AS full
+         FROM photos
+        WHERE animal_id = $1
+        ORDER BY slot`,
       [id]
-    )
+    );
 
     const contactRes = await pool.query(
       `SELECT
@@ -226,7 +174,7 @@ app.get('/api/animals/:id', async (req, res) => {
        WHERE c.animal_id = $1
        LIMIT 1`,
       [id]
-    )
+    );
 
     const animalDetail = {
       id:        row.id,
@@ -236,46 +184,40 @@ app.get('/api/animals/:id', async (req, res) => {
       age:       row.age,
       gender:    row.gender,
       size:      row.size,
-
       breeds: {
-        breed: row.breed_flag   // true = vira-lata
+        breed: row.breed_flag    // true = vira-lata
       },
-
       colors: {
         primary:   row.primary_color,
         secondary: row.secondary_color,
         tertiary:  row.tertiary_color
       },
-
       attributes: {
         spayed_neutered: row.spayed_neutered,
         shots_current:   row.shots_current
       },
-
       environment: {
         children: row.children,
         dogs:     row.dogs,
         cats:     row.cats
       },
-
       organization_animal_id: row.organization_animal_id,
       status:                row.status,
       status_changed_at:     row.status_changed_at,
       published_at:          row.published_at,
+      photos:                photosRes.rows,
+      contact:               contactRes.rows[0] || {}
+    };
 
-      photos:  photosRes.rows,
-      contact: contactRes.rows[0] || {}
-    }
-
-    return res.json(animalDetail)
+    return res.json(animalDetail);
   } catch (err) {
-    console.error(err)
-    return res.status(500).json({ error: err.message })
+    console.error(err);
+    return res.status(500).json({ error: err.message });
   }
-})
+});
 
-// Inicia o servidor
-const port = process.env.PORT || process.env.API_PORT || 3001
+// Start server
+const port = process.env.PORT || process.env.API_PORT || 3001;
 app.listen(port, () => {
-  console.log(`🐶 API rodando na porta ${port}`)
-})
+  console.log(`🐶 API rodando na porta ${port}`);
+});

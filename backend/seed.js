@@ -9,45 +9,18 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-async function seedTypes() {
-  const file = path.join(__dirname, 'src', 'mocks', 'data', 'types.json');
-  const { types } = JSON.parse(await fs.readFile(file, 'utf8'));
-
-  for (const t of types) {
-    await pool.query(
-      `INSERT INTO types(name)
-         VALUES ($1)
-       ON CONFLICT(name) DO NOTHING`,
-      [t.name]
-    );
-  }
-
-  console.log('✅ types seeded');
-}
-
 async function seedAnimals() {
   const file = path.join(__dirname, 'src', 'mocks', 'data', 'animals.json');
   const { animals } = JSON.parse(await fs.readFile(file, 'utf8'));
 
   for (const a of animals) {
-    // busca o type_id
-    const { rows: typeRows } = await pool.query(
-      `SELECT id FROM types WHERE name = $1`,
-      [a.type]
-    );
-    if (!typeRows.length) {
-      console.warn(`⏭️ Skip animal id=${a.id}: tipo "${a.type}" não cadastrado`);
-      continue;
-    }
-    const type_id = typeRows[0].id;
-
-    // insere o animal sem as colunas deletadas
+    // agora usamos diretmente a.string enum em animals.type
     await pool.query(
       `INSERT INTO animals(
          id,
          organization_id,
          url,
-         type_id,
+         type,
          name,
          description,
          age,
@@ -79,7 +52,7 @@ async function seedAnimals() {
         a.id,
         a.organization_id,
         a.url,
-        type_id,
+        a.type,                     // antes usávamos type_id/tables types
         a.name,
         a.description,
         a.age,
@@ -88,7 +61,7 @@ async function seedAnimals() {
         a.colors.primary,
         a.colors.secondary,
         a.colors.tertiary,
-        a.breeds.breed,              // antes era mixed
+        a.breeds.breed,             // booleano breed
         a.attributes.spayed_neutered,
         a.attributes.shots_current,
         a.environment.children,
@@ -110,7 +83,7 @@ async function seedContacts() {
   const { animals } = JSON.parse(await fs.readFile(file, 'utf8'));
 
   for (const a of animals) {
-    // insere contato só se o animal existir
+    // só insere contato se o animal existir
     const { rows: exists } = await pool.query(
       `SELECT 1 FROM animals WHERE id = $1`,
       [a.id]
@@ -120,14 +93,14 @@ async function seedContacts() {
     const addr = a.contact?.address;
     if (!addr?.city) continue;
 
-    // acha ou insere endereço
-    const { rows: foundAddrs } = await pool.query(
+    // busca ou cria endereço
+    const { rows: found } = await pool.query(
       `SELECT id FROM addresses WHERE city = $1 AND state = $2`,
       [addr.city, addr.state]
     );
     let addressId;
-    if (foundAddrs.length) {
-      addressId = foundAddrs[0].id;
+    if (found.length) {
+      addressId = found[0].id;
     } else {
       const { rows: ins } = await pool.query(
         `INSERT INTO addresses(city, state)
@@ -141,7 +114,8 @@ async function seedContacts() {
     // insere o contato
     await pool.query(
       `INSERT INTO contacts(animal_id, email, phone, address_id)
-         VALUES ($1,$2,$3,$4)`,
+         VALUES ($1,$2,$3,$4)
+       ON CONFLICT DO NOTHING`,
       [a.id, a.contact.email, a.contact.phone, addressId]
     );
   }
@@ -151,7 +125,6 @@ async function seedContacts() {
 
 async function main() {
   try {
-    await seedTypes();
     await seedAnimals();
     await seedContacts();
   } catch (err) {
