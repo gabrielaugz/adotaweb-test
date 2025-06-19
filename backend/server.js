@@ -56,8 +56,14 @@ app.get('/api/animals', async (req, res) => {
       a.size,
       a.primary_color,
       COALESCE(p.url_medium, a.url) AS "photoUrl",
-      addr.city,
-      addr.state,
+      org.email       AS org_email,
+      org.phone       AS org_phone,
+      org.address1    AS org_address1,
+      org.address2    AS org_address2,
+      org.city        AS org_city,
+      org.state       AS org_state,
+      org.postcode    AS org_postcode,
+      org.country     AS org_country,
       a.shots_current,
       a.spayed_neutered,
       a.breed
@@ -68,11 +74,11 @@ app.get('/api/animals', async (req, res) => {
       WHERE p2.animal_id = a.id AND p2.is_primary
       LIMIT 1
     ) p ON true
-    LEFT JOIN contacts c ON c.animal_id = a.id
-    LEFT JOIN addresses addr ON c.address_id = addr.id
+    LEFT JOIN organizations org
+      ON org.id = a.organization_fk
     WHERE
       ($1 = '' OR a.type::text = $1)
-      AND ($2 = '' OR addr.city ILIKE '%'||$2||'%')
+      AND ($2 = '' OR org.city ILIKE '%'||$2||'%')
       AND ( $3 = '' OR ( $3 = 'true' AND a.shots_current = TRUE ) OR ( $3 = 'false' AND a.shots_current = FALSE ) )
       AND ( $4 = '' OR ( $4 = 'true' AND a.spayed_neutered = TRUE ) OR ( $4 = 'false' AND a.spayed_neutered = FALSE ) )
       AND ( $5 = '' OR ( $5 = 'true' AND a.breed = TRUE ) OR ( $5 = 'false' AND a.breed = FALSE ) )
@@ -97,9 +103,15 @@ app.get('/api/animals', async (req, res) => {
       spayed_neutered: r.spayed_neutered,
       breed:           r.breed,
       contact: {
+        email:   r.org_email,
+        phone:   r.org_phone,
         address: {
-          city:  r.city  || 'Não informado',
-          state: r.state || ''
+          address1: r.org_address1,
+          address2: r.org_address2,
+          city:      r.org_city || 'Não informado',
+          state:     r.org_state || '',
+          postcode:  r.org_postcode,
+          country:   r.org_country
         }
       }
     }));
@@ -137,11 +149,20 @@ app.get('/api/animals/:id', async (req, res) => {
         a.children,
         a.dogs,
         a.cats,
-        a.organization_animal_id,
         a.status,
         a.status_changed_at,
-        a.published_at
+        a.published_at,
+        org.email       AS org_email,
+        org.phone       AS org_phone,
+        org.address1    AS org_address1,
+        org.address2    AS org_address2,
+        org.city        AS org_city,
+        org.state       AS org_state,
+        org.postcode    AS org_postcode,
+        org.country     AS org_country
       FROM animals a
+      LEFT JOIN organizations org
+        ON org.id = a.organization_fk
       WHERE a.id = $1
       LIMIT 1
     `;
@@ -157,25 +178,6 @@ app.get('/api/animals/:id', async (req, res) => {
       [id]
     );
 
-    const contactRes = await pool.query(
-      `SELECT
-         c.email,
-         c.phone,
-         json_build_object(
-           'address1', addr.address1,
-           'address2', addr.address2,
-           'city',     addr.city,
-           'state',    addr.state,
-           'postcode', addr.postcode,
-           'country',  addr.country
-         ) AS address
-       FROM contacts c
-       LEFT JOIN addresses addr ON c.address_id = addr.id
-       WHERE c.animal_id = $1
-       LIMIT 1`,
-      [id]
-    );
-
     const animalDetail = {
       id:        row.id,
       type:      row.type,
@@ -185,7 +187,7 @@ app.get('/api/animals/:id', async (req, res) => {
       gender:    row.gender,
       size:      row.size,
       breeds: {
-        breed: row.breed_flag    // true = vira-lata
+        breed: row.breed_flag
       },
       colors: {
         primary:   row.primary_color,
@@ -206,7 +208,18 @@ app.get('/api/animals/:id', async (req, res) => {
       status_changed_at:     row.status_changed_at,
       published_at:          row.published_at,
       photos:                photosRes.rows,
-      contact:               contactRes.rows[0] || {}
+      contact: {
+        email:   row.org_email,
+        phone:   row.org_phone,
+        address: {
+          address1: row.org_address1,
+          address2: row.org_address2,
+          city:      row.org_city  || 'Não informado',
+          state:     row.org_state || '',
+          postcode:  row.org_postcode,
+          country:   row.org_country
+        }
+      }
     };
 
     return res.json(animalDetail);
