@@ -2,8 +2,8 @@
 require('dotenv').config();
 const path    = require('path');
 const express = require('express');
-const pool = require('./lib/db');
-const authRoutes = require('./routes/auth');
+const pool = require('./src/lib/db');
+const authRoutes  = require('./src/routes/auth');
 
 const app = express();
 app.use(express.json());

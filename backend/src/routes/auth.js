@@ -3,8 +3,7 @@ const express  = require('express');
 const bcrypt   = require('bcrypt');
 const jwt      = require('jsonwebtoken');
 const pool     = require('../lib/db');
-
-const router = express.Router();
+const router = require('express').Router();
 
 // POST /auth/login
 router.post('/login', async (req, res) => {
