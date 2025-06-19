@@ -43,22 +43,25 @@ async function create(orgId, data) {
   } = data;
 
   const sql = `
-    INSERT INTO animals (
-      organization_fk, url, type, name, description,
+    INSERT INTO animals(
+      organization_fk,
+      url, type, name, description,
       age, gender, size,
       primary_color, secondary_color, tertiary_color,
       breed, spayed_neutered, shots_current,
       children, dogs, cats,
-      status, status_changed_at, published_at
+      status,
+      status_changed_at, published_at
     ) VALUES (
-      $1,$2,$3,$4,$5,
-      $6,$7,$8,
-      $9,$10,$11,
-      $12,$13,$14,
-      $15,$16,$17,
-      $18,NOW(),NOW()
-    ) RETURNING *
-  `;
+      $1,  $2,   $3,   $4,   $5,
+      $6,   $7,     $8,
+      $9,    $10,     $11,
+      $12,     $13,         $14,
+      $15,      $16,  $17,
+      $18,
+      NOW(), NOW()
+    )
+    RETURNING *`;
 
   const values = [
     orgId,
