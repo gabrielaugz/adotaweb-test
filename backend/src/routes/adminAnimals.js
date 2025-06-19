@@ -1,4 +1,4 @@
-// src/routes/adminAnimals.js
+// src/backend/src/routes/adminAnimals.js
 const express = require('express');
 const router  = express.Router();
 const {
@@ -9,7 +9,6 @@ const {
 } = require('../lib/animals');
 
 // GET  /api/admin/animals
-// Lista todos os animais da ONG autenticada
 router.get('/', async (req, res) => {
   try {
     const rows = await getAll(req.organization.id);
@@ -21,7 +20,6 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/admin/animals
-// Cria um novo animal para esta ONG
 router.post('/', async (req, res) => {
   try {
     const novo = await createAnimal(req.organization.id, req.body);
@@ -33,7 +31,6 @@ router.post('/', async (req, res) => {
 });
 
 // PUT  /api/admin/animals/:id
-// Atualiza um animal existente (se pertencer a esta ONG)
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
   try {
@@ -49,7 +46,6 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /api/admin/animals/:id
-// Marca como invisível (soft delete) ou remove completamente
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   try {
