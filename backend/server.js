@@ -23,8 +23,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve React build em produção
+// Serve React build em produção (ajuste conforme seu layout de pastas)
 if (process.env.NODE_ENV === 'production') {
+  // Se o server.js está em src/backend, e o frontend build fica em src/frontend/build:
   const buildPath = path.join(__dirname, '..', 'frontend', 'build');
   app.use(express.static(buildPath));
   app.get(/^\/(?!api).*/, (_req, res) => {
@@ -34,7 +35,7 @@ if (process.env.NODE_ENV === 'production') {
 
 /**
  * GET /api/animals
- * Lista animais com filtros e inclui dados de contato vindos da ONG
+ * Lista animais com filtros e inclui dados da ONG em `contact`
  */
 app.get('/api/animals', async (req, res) => {
   const {
@@ -68,39 +69,35 @@ app.get('/api/animals', async (req, res) => {
       a.spayed_neutered,
       a.breed
     FROM animals a
-
-    -- foto principal
     LEFT JOIN LATERAL (
       SELECT url_medium
       FROM photos p2
-      WHERE p2.animal_id = a.id AND p2.is_primary
+      WHERE p2.animal_id = a.id
+        AND p2.is_primary
       LIMIT 1
     ) p ON true
-
-    -- contato vem da ONG
     LEFT JOIN organizations org
       ON org.id = a.organization_fk
-
     WHERE
-      ($1 = ''    OR a.type             = $1)
+      ($1 = ''    OR a.type::text        = $1)     -- << enum cast to text
       AND ($2 = '' OR org.city    ILIKE '%'||$2||'%')
       AND (
-        $3 = '' 
+        $3 = ''
         OR ($3 = 'true'  AND a.shots_current    = TRUE)
         OR ($3 = 'false' AND a.shots_current    = FALSE)
       )
       AND (
-        $4 = '' 
+        $4 = ''
         OR ($4 = 'true'  AND a.spayed_neutered = TRUE)
         OR ($4 = 'false' AND a.spayed_neutered = FALSE)
       )
       AND (
-        $5 = '' 
+        $5 = ''
         OR ($5 = 'true'  AND a.breed           = TRUE)
         OR ($5 = 'false' AND a.breed           = FALSE)
       )
       AND (
-        $6 = '' 
+        $6 = ''
         OR ($6 = 'true'  AND a.age = 'Baby')
         OR ($6 = 'false' AND a.age <> 'Baby')
       )
@@ -146,7 +143,7 @@ app.get('/api/animals', async (req, res) => {
 
 /**
  * GET /api/animals/:id
- * Detalhes de um pet, com dados de contato da ONG
+ * Detalhes completos de um único animal, incluindo contato da ONG.
  */
 app.get('/api/animals/:id', async (req, res) => {
   const { id } = req.params;
@@ -207,18 +204,25 @@ app.get('/api/animals/:id', async (req, res) => {
       age:         row.age,
       gender:      row.gender,
       size:        row.size,
-      breeds:      { breed: row.breed_flag },
-      colors:      {
+      breeds: { breed: row.breed_flag },
+      colors: {
         primary:   row.primary_color,
         secondary: row.secondary_color,
         tertiary:  row.tertiary_color
       },
-      attributes: { spayed_neutered: row.spayed_neutered, shots_current: row.shots_current },
-      environment:{ children: row.children, dogs: row.dogs, cats: row.cats },
-      status:              row.status,
-      status_changed_at:   row.status_changed_at,
-      published_at:        row.published_at,
-      photos:              photosRes.rows,
+      attributes: {
+        spayed_neutered: row.spayed_neutered,
+        shots_current:   row.shots_current
+      },
+      environment: {
+        children: row.children,
+        dogs:     row.dogs,
+        cats:     row.cats
+      },
+      status:             row.status,
+      status_changed_at:  row.status_changed_at,
+      published_at:       row.published_at,
+      photos:             photosRes.rows,
       contact: {
         email: row.org_email,
         phone: row.org_phone,
@@ -242,4 +246,6 @@ app.get('/api/animals/:id', async (req, res) => {
 
 // Inicia o servidor
 const port = process.env.PORT || process.env.API_PORT || 3001;
-app.listen(port, () => console.log(`🐶 API rodando na porta ${port}`));
+app.listen(port, () => {
+  console.log(`🐶 API rodando na porta ${port}`);
+});
