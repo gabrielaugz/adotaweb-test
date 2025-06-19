@@ -1,14 +1,13 @@
 // server.js
-require('dotenv').config();
-const path             = require('path');
-const express          = require('express');
-const pool             = require('./src/lib/db');
-const authRoutes       = require('./src/routes/auth');
-const authMiddleware   = require('./src/middleware/auth');
-const adminAnimalsRoutes = require('./src/routes/adminAnimals');
-
-const app = express();
-app.use(express.json());
+require('dotenv').config()
+const express = require('express')
+const path    = require('path')
+const authRoutes       = require('./src/routes/auth')
+const adminAnimals     = require('./src/routes/adminAnimals')
+const authMiddleware   = require('./src/middleware/auth')
+const pool             = require('./src/lib/db')
+const app = express()
+app.use(express.json())
 
 // CORS básico
 app.use((req, res, next) => {
@@ -19,16 +18,20 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use('/api/auth', authRoutes)
+app.use('/api/admin/animals', authMiddleware, adminAnimals)
+app.get('/api/animals', /* seu handler existente */)
+app.get('/api/animals/:id', /* handler */)
+
 app.use('/auth', authRoutes);
 
 // Serve React build em produção (ajuste conforme seu layout de pastas)
 if (process.env.NODE_ENV === 'production') {
-  // Se o server.js está em src/backend, e o frontend build fica em src/frontend/build:
-  const buildPath = path.join(__dirname, '..', 'frontend', 'build');
-  app.use(express.static(buildPath));
+  const buildPath = path.join(__dirname, '..', 'frontend', 'build')
+  app.use(express.static(buildPath))
   app.get(/^\/(?!api).*/, (_req, res) => {
-    res.sendFile(path.join(buildPath, 'index.html'));
-  });
+    res.sendFile(path.join(buildPath, 'index.html'))
+  })
 }
 
 // Rotas de autenticação
@@ -248,7 +251,5 @@ app.get('/api/animals/:id', async (req, res) => {
 app.use('/api/admin/animals', authMiddleware, adminAnimalsRoutes);
 
 // Inicia o servidor
-const port = process.env.PORT || process.env.API_PORT || 3001;
-app.listen(port, () => {
-  console.log(`🐶 API rodando na porta ${port}`);
-});
+const port = process.env.PORT || 3001
+app.listen(port, ()=> console.log(`🐶 rodando na ${port}`))

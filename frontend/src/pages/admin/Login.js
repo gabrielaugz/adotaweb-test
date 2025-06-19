@@ -13,7 +13,7 @@ export default function LoginPage() {
 
     try {
       const base = window.location.origin          // pega https://adotaweb-test-1.onrender.com
-        const res  = await fetch(`${base}/auth/login`, {
+        const res = await fetch(`${window.location.origin}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
