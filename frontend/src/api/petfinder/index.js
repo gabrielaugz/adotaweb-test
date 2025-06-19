@@ -26,17 +26,15 @@ export const getPets = async ({
     ? type[0].toUpperCase() + type.slice(1).toLowerCase()
     : '';
 
-  // **só** um append de type
-  if (typeParam)    params.append('type',       typeParam);
-  if (city)         params.append('city',       city);
-  if (vaccinated)   params.append('vaccinated', vaccinated);
-  if (neutered)     params.append('neutered',   neutered);
-  if (breed)        params.append('breed',      breed);
-  if (puppy)        params.append('puppy',      puppy);
+  // **só aqui** acrescentamos type
+  if (typeParam) params.append('type', typeParam);
+  if (city)      params.append('city', city);
+  if (vaccinated)params.append('vaccinated', vaccinated);
+  if (neutered)  params.append('neutered',   neutered);
+  if (breed)     params.append('breed',      breed);
+  if (puppy)     params.append('puppy',      puppy);
 
-  const { animals } = await fetchJSON(
-    `${API}/animals?${params.toString()}`
-  );
+  const { animals } = await fetchJSON(`${API}/animals?${params}`);
   return animals;
 };
 // === Fim do getPets novo ===
