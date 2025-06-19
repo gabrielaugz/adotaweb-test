@@ -26,7 +26,6 @@ export const getPets = async ({
     typeParam = type[0].toUpperCase() + type.slice(1).toLowerCase();
   }
 
-  if (type)              params.append('type',       type);
   if (typeParam)         params.append('type',       typeParam);
   if (city)              params.append('city',       city);
   if (vaccinated !== '') params.append('vaccinated', vaccinated);
