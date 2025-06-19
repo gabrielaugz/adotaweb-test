@@ -8,9 +8,7 @@ async function fetchJSON(url) {
   return res.json();
 }
 
-// Fetch pet types (Cat, Dog, etc.)
-export const getPetTypes = () =>
-  fetchJSON(`${API}/types`);
+export const tipos = ['Cat','Dog'];
 
 // === Substitua aqui pelo novo getPets: ===
 export const getPets = async ({
