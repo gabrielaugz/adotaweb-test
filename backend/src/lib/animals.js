@@ -3,6 +3,8 @@ const pool = require('./db');
 
 /**
  * Lista todos os animais de uma ONG específica
+ * @param {number|string} orgId
+ * @returns {Promise<Array>} lista de animais
  */
 async function getAll(orgId) {
   const { rows } = await pool.query(
@@ -17,66 +19,62 @@ async function getAll(orgId) {
 
 /**
  * Cria um novo animal para a ONG
+ * @param {number|string} orgId
+ * @param {object} data objeto com chaves iguais às colunas do BD
+ * @returns {Promise<object>} animal criado
  */
 async function create(orgId, data) {
-  // 1) Desestruturação do JSON, com defaults
   const {
-    url,
+    url = null,
     type,
-    name,
-    description,
-    age,
-    gender,
-    size,
-    breeds: { mixed: breed = false } = {},
-    colors: {
-      primary: primary_color = null,
-      secondary: secondary_color = null,
-      tertiary: tertiary_color = null
-    } = {},
-    attributes: {
-      spayed_neutered = false,
-      shots_current   = false
-    } = {},
-    environment: {
-      children = false,
-      dogs     = false,
-      cats     = false
-    } = {},
+    name = null,
+    description = null,
+    age = null,
+    gender = null,
+    size = null,
+    primary_color = null,
+    secondary_color = null,
+    tertiary_color = null,
+    breed = false,
+    spayed_neutered = false,
+    shots_current = false,
+    children = false,
+    dogs = false,
+    cats = false,
     organization_animal_id = null,
-    status
+    status = 'available'
   } = data;
 
-  // 2) Montagem de colunas e valores
-  const cols = [
-    'organization_fk',
-    'url','type','name','description','age','gender','size',
-    'primary_color','secondary_color','tertiary_color',
-    'breed','spayed_neutered','shots_current',
-    'children','dogs','cats','organization_animal_id','status',
-    'status_changed_at','published_at'
-  ];
-  // Para status_changed_at e published_at usamos NOW() diretamente
+  const sql = `
+    INSERT INTO animals(
+      organization_fk, url, type, name, description,
+      age, gender, size,
+      primary_color, secondary_color, tertiary_color,
+      breed, spayed_neutered, shots_current,
+      children, dogs, cats,
+      organization_animal_id, status,
+      status_changed_at, published_at
+    ) VALUES (
+      $1, $2, $3, $4, $5,
+      $6, $7, $8,
+      $9, $10, $11,
+      $12, $13, $14,
+      $15, $16, $17,
+      $18, $19,
+      NOW(), NOW()
+    ) RETURNING *
+  `;
+
   const values = [
     orgId,
     url, type, name, description,
     age, gender, size,
     primary_color, secondary_color, tertiary_color,
     breed, spayed_neutered, shots_current,
-    children, dogs, cats, organization_animal_id, status
+    children, dogs, cats,
+    organization_animal_id, status
   ];
 
-  // Geramos placeholders $1..$19 para os 19 primeiros campos
-  const placeholders = values.map((_, i) => `$${i+1}`);
-
-  const sql = `
-    INSERT INTO animals(
-      ${cols.join(',')}
-    ) VALUES (
-      ${placeholders.join(',')}, NOW(), NOW()
-    )
-    RETURNING *
-  `;
   const { rows } = await pool.query(sql, values);
   return rows[0];
 }
@@ -88,20 +86,18 @@ async function update(id, orgId, data) {
   const fields = Object.keys(data);
   if (fields.length === 0) return null;
 
-  // Monta SET "campo"=$3, "outro"=$4, ...
   const assignments = fields.map((f, i) => `"${f}"=$${i+3}`);
   const values = fields.map(f => data[f]);
-  // Preenche $1=id e $2=orgId
   values.unshift(orgId);
   values.unshift(id);
 
   const sql = `
     UPDATE animals
        SET ${assignments.join(',')}, status_changed_at = NOW()
-     WHERE id = $1
-       AND organization_fk = $2
+     WHERE id = $1 AND organization_fk = $2
      RETURNING *
   `;
+
   const { rows } = await pool.query(sql, values);
   return rows[0] || null;
 }
@@ -111,9 +107,7 @@ async function update(id, orgId, data) {
  */
 async function remove(id, orgId) {
   const { rowCount } = await pool.query(
-    `DELETE FROM animals
-     WHERE id = $1
-       AND organization_fk = $2`,
+    `DELETE FROM animals WHERE id = $1 AND organization_fk = $2`,
     [id, orgId]
   );
   return rowCount > 0;
