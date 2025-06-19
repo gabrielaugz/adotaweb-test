@@ -14,16 +14,16 @@ const pool = new Pool({
 const app = express();
 app.use(express.json());
 
-// CORS
+// CORS básico
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Origin',  '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
 
-// Serve React build in production
+// Serve React build em produção
 if (process.env.NODE_ENV === 'production') {
   const buildPath = path.join(__dirname, 'frontend', 'build');
   app.use(express.static(buildPath));
@@ -34,7 +34,8 @@ if (process.env.NODE_ENV === 'production') {
 
 /**
  * GET /api/animals
- * List with filters: type, city, vaccinated, neutered, breed, puppy
+ * Lista animais com filtros (type, city, vaccinated, neutered, breed, puppy),
+ * e retorna também dados de contato vindos da tabela organizations.
  */
 app.get('/api/animals', async (req, res) => {
   const {
@@ -56,14 +57,14 @@ app.get('/api/animals', async (req, res) => {
       a.size,
       a.primary_color,
       COALESCE(p.url_medium, a.url) AS "photoUrl",
-      org.email       AS org_email,
-      org.phone       AS org_phone,
-      org.address1    AS org_address1,
-      org.address2    AS org_address2,
-      org.city        AS org_city,
-      org.state       AS org_state,
-      org.postcode    AS org_postcode,
-      org.country     AS org_country,
+      org.email    AS org_email,
+      org.phone    AS org_phone,
+      org.address1 AS org_address1,
+      org.address2 AS org_address2,
+      org.city     AS org_city,
+      org.state    AS org_state,
+      org.postcode AS org_postcode,
+      org.country  AS org_country,
       a.shots_current,
       a.spayed_neutered,
       a.breed
@@ -71,18 +72,35 @@ app.get('/api/animals', async (req, res) => {
     LEFT JOIN LATERAL (
       SELECT url_medium
       FROM photos p2
-      WHERE p2.animal_id = a.id AND p2.is_primary
+      WHERE p2.animal_id = a.id
+        AND p2.is_primary
       LIMIT 1
     ) p ON true
     LEFT JOIN organizations org
       ON org.id = a.organization_fk
     WHERE
-      ($1 = '' OR a.type::text = $1)
-      AND ($2 = '' OR org.city ILIKE '%'||$2||'%')
-      AND ( $3 = '' OR ( $3 = 'true' AND a.shots_current = TRUE ) OR ( $3 = 'false' AND a.shots_current = FALSE ) )
-      AND ( $4 = '' OR ( $4 = 'true' AND a.spayed_neutered = TRUE ) OR ( $4 = 'false' AND a.spayed_neutered = FALSE ) )
-      AND ( $5 = '' OR ( $5 = 'true' AND a.breed = TRUE ) OR ( $5 = 'false' AND a.breed = FALSE ) )
-      AND ( $6 = '' OR ( $6 = 'true' AND a.age = 'Baby' ) OR ( $6 = 'false' AND a.age <> 'Baby' ) )
+      ($1 = ''    OR a.type             = $1)
+      AND ($2 = '' OR org.city    ILIKE '%'||$2||'%')
+      AND (
+        $3 = '' 
+        OR ($3 = 'true'  AND a.shots_current    = TRUE)
+        OR ($3 = 'false' AND a.shots_current    = FALSE)
+      )
+      AND (
+        $4 = '' 
+        OR ($4 = 'true'  AND a.spayed_neutered = TRUE)
+        OR ($4 = 'false' AND a.spayed_neutered = FALSE)
+      )
+      AND (
+        $5 = '' 
+        OR ($5 = 'true'  AND a.breed           = TRUE)
+        OR ($5 = 'false' AND a.breed           = FALSE)
+      )
+      AND (
+        $6 = '' 
+        OR ($6 = 'true'  AND a.age = 'Baby')
+        OR ($6 = 'false' AND a.age <> 'Baby')
+      )
     LIMIT 100
   `;
 
@@ -108,8 +126,8 @@ app.get('/api/animals', async (req, res) => {
         address: {
           address1: r.org_address1,
           address2: r.org_address2,
-          city:      r.org_city || 'Não informado',
-          state:     r.org_state || '',
+          city:      r.org_city   || 'Não informado',
+          state:     r.org_state  || '',
           postcode:  r.org_postcode,
           country:   r.org_country
         }
@@ -125,67 +143,71 @@ app.get('/api/animals', async (req, res) => {
 
 /**
  * GET /api/animals/:id
- * Detailed info for one animal
+ * Detalhes completos de um único animal, incluindo contato da ONG.
  */
 app.get('/api/animals/:id', async (req, res) => {
   const { id } = req.params;
 
+  const detailSql = `
+    SELECT
+      a.id,
+      a.type,
+      a.name,
+      a.description,
+      a.age,
+      a.gender,
+      a.size,
+      a.primary_color,
+      a.secondary_color,
+      a.tertiary_color,
+      a.breed           AS breed_flag,
+      a.spayed_neutered,
+      a.shots_current,
+      a.children,
+      a.dogs,
+      a.cats,
+      a.status,
+      a.status_changed_at,
+      a.published_at,
+      org.email    AS org_email,
+      org.phone    AS org_phone,
+      org.address1 AS org_address1,
+      org.address2 AS org_address2,
+      org.city     AS org_city,
+      org.state    AS org_state,
+      org.postcode AS org_postcode,
+      org.country  AS org_country
+    FROM animals a
+    LEFT JOIN organizations org
+      ON org.id = a.organization_fk
+    WHERE a.id = $1
+    LIMIT 1
+  `;
+
   try {
-    const detailSql = `
-      SELECT
-        a.id,
-        a.type,
-        a.name,
-        a.description,
-        a.age,
-        a.gender,
-        a.size,
-        a.primary_color,
-        a.secondary_color,
-        a.tertiary_color,
-        a.breed      AS breed_flag,
-        a.spayed_neutered,
-        a.shots_current,
-        a.children,
-        a.dogs,
-        a.cats,
-        a.status,
-        a.status_changed_at,
-        a.published_at,
-        org.email       AS org_email,
-        org.phone       AS org_phone,
-        org.address1    AS org_address1,
-        org.address2    AS org_address2,
-        org.city        AS org_city,
-        org.state       AS org_state,
-        org.postcode    AS org_postcode,
-        org.country     AS org_country
-      FROM animals a
-      LEFT JOIN organizations org
-        ON org.id = a.organization_fk
-      WHERE a.id = $1
-      LIMIT 1
-    `;
     const { rows } = await pool.query(detailSql, [id]);
     const row = rows[0];
     if (!row) return res.status(404).json({ error: 'Pet não encontrado' });
 
-    const photosRes = await pool.query(
-      `SELECT url_small AS small, url_medium AS medium, url_large AS large, url_full AS full
-         FROM photos
-        WHERE animal_id = $1
-        ORDER BY slot`,
-      [id]
-    );
+    const photosRes = await pool.query(`
+      SELECT
+        url_small  AS small,
+        url_medium AS medium,
+        url_large  AS large,
+        url_full   AS full
+      FROM photos
+      WHERE animal_id = $1
+      ORDER BY slot
+    `, [id]);
 
     const animalDetail = {
-      id:        row.id,
-      type:      row.type,
-      name:      row.name,
+      id:          row.id,
+      type:        row.type,
+      name:        row.name,
       description: row.description,
-      age:       row.age,
-      gender:    row.gender,
-      size:      row.size,
+      age:         row.age,
+      gender:      row.gender,
+      size:        row.size,
       breeds: {
         breed: row.breed_flag
       },
@@ -203,19 +225,18 @@ app.get('/api/animals/:id', async (req, res) => {
         dogs:     row.dogs,
         cats:     row.cats
       },
-      organization_animal_id: row.organization_animal_id,
-      status:                row.status,
-      status_changed_at:     row.status_changed_at,
-      published_at:          row.published_at,
-      photos:                photosRes.rows,
+      status:               row.status,
+      status_changed_at:    row.status_changed_at,
+      published_at:         row.published_at,
+      photos:               photosRes.rows,
       contact: {
-        email:   row.org_email,
-        phone:   row.org_phone,
+        email: row.org_email,
+        phone: row.org_phone,
         address: {
           address1: row.org_address1,
           address2: row.org_address2,
-          city:      row.org_city  || 'Não informado',
-          state:     row.org_state || '',
+          city:      row.org_city   || 'Não informado',
+          state:     row.org_state  || '',
           postcode:  row.org_postcode,
           country:   row.org_country
         }
@@ -229,7 +250,7 @@ app.get('/api/animals/:id', async (req, res) => {
   }
 });
 
-// Start server
+// Inicia o servidor
 const port = process.env.PORT || process.env.API_PORT || 3001;
 app.listen(port, () => {
   console.log(`🐶 API rodando na porta ${port}`);
