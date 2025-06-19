@@ -2,7 +2,7 @@
   "name": "adotaweb-frontend",
   "version": "1.0.0",
   "private": true,
-  "proxy": "http://localhost:3001",
+  "proxy": "http://localhost:10000",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
