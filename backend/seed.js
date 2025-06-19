@@ -13,19 +13,29 @@ async function seedAnimals() {
   const file = path.join(__dirname, 'src', 'mocks', 'data', 'animals.json');
   const { animals } = JSON.parse(await fs.readFile(file, 'utf8'));
 
-  // só vamos semear Cat e Dog
   const allowed = ['Cat','Dog'];
-
   for (const a of animals) {
     if (!allowed.includes(a.type)) {
       console.warn(`⏭️ Skip tipo inválido: ${a.type} (id=${a.id})`);
       continue;
     }
-    // agora usamos diretmente a.string enum em animals.type
+
+    // 1) encontre o pk da ONG pelo CNPJ que está em a.organization_id
+    const { rows: orgRows } = await pool.query(
+      `SELECT id FROM organizations WHERE cnpj = $1`,
+      [a.organization_id]
+    );
+    if (!orgRows.length) {
+      console.warn(`⚠️ ONG não encontrada para CNPJ=${a.organization_id} (animal ${a.id})`);
+      continue;
+    }
+    const orgFk = orgRows[0].id;
+
+    // 2) insira o animal já apontando para organization_fk
     await pool.query(
       `INSERT INTO animals(
          id,
-         organization_id,
+         organization_fk,       -- agora a FK para organizations
          url,
          type,
          name,
@@ -54,12 +64,12 @@ async function seedAnimals() {
          $17,$18,$19,
          $20,$21,$22
        )
-       ON CONFLICT(id) DO NOTHING`,
+       ON CONFLICT (id) DO NOTHING`,
       [
         a.id,
-        a.organization_id,
+        orgFk,                      // <-- aqui
         a.url,
-        a.type,                     // antes usávamos type_id/tables types
+        a.type,
         a.name,
         a.description,
         a.age,
@@ -68,7 +78,7 @@ async function seedAnimals() {
         a.colors.primary,
         a.colors.secondary,
         a.colors.tertiary,
-        a.breeds.breed,             // booleano breed
+        a.breeds.breed,
         a.attributes.spayed_neutered,
         a.attributes.shots_current,
         a.environment.children,
@@ -85,55 +95,9 @@ async function seedAnimals() {
   console.log('✅ animals seeded');
 }
 
-async function seedContacts() {
-  const file = path.join(__dirname, 'src', 'mocks', 'data', 'animals.json');
-  const { animals } = JSON.parse(await fs.readFile(file, 'utf8'));
-
-  for (const a of animals) {
-    // só insere contato se o animal existir
-    const { rows: exists } = await pool.query(
-      `SELECT 1 FROM animals WHERE id = $1`,
-      [a.id]
-    );
-    if (!exists.length) continue;
-
-    const addr = a.contact?.address;
-    if (!addr?.city) continue;
-
-    // busca ou cria endereço
-    const { rows: found } = await pool.query(
-      `SELECT id FROM addresses WHERE city = $1 AND state = $2`,
-      [addr.city, addr.state]
-    );
-    let addressId;
-    if (found.length) {
-      addressId = found[0].id;
-    } else {
-      const { rows: ins } = await pool.query(
-        `INSERT INTO addresses(city, state)
-           VALUES ($1,$2)
-         RETURNING id`,
-        [addr.city, addr.state]
-      );
-      addressId = ins[0].id;
-    }
-
-    // insere o contato
-    await pool.query(
-      `INSERT INTO contacts(animal_id, email, phone, address_id)
-         VALUES ($1,$2,$3,$4)
-       ON CONFLICT DO NOTHING`,
-      [a.id, a.contact.email, a.contact.phone, addressId]
-    );
-  }
-
-  console.log('✅ contacts seeded');
-}
-
 async function main() {
   try {
     await seedAnimals();
-    await seedContacts();
   } catch (err) {
     console.error(err);
   } finally {
