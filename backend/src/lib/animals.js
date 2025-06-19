@@ -3,6 +3,7 @@ const pool = require('./db');
 
 /**
  * Lista todos os animais de uma ONG específica
+ * @param {string|number} orgId
  */
 async function getAll(orgId) {
   const { rows } = await pool.query(
@@ -16,44 +17,65 @@ async function getAll(orgId) {
 }
 
 /**
- * Cria um novo animal para a ONG (campos dinâmicos)
+ * Cria um novo animal para a ONG
+ * @param {string|number} orgId
+ * @param {object} data
  */
 async function create(orgId, data) {
-  // Colunas permitidas além de organization_fk
-  const allowed = [
-    'url','type','name','description','age','gender','size',
-    'primary_color','secondary_color','tertiary_color',
-    'breed','spayed_neutered','shots_current',
-    'children','dogs','cats','organization_animal_id','status'
-  ];
+  const {
+    url = null,
+    type,
+    name = null,
+    description = null,
+    age = null,
+    gender = null,
+    size = null,
+    primary_color = null,
+    secondary_color = null,
+    tertiary_color = null,
+    breed = false,
+    spayed_neutered = false,
+    shots_current = false,
+    children = false,
+    dogs = false,
+    cats = false,
+    status = 'available'
+  } = data;
 
-  // Monta dinamicamente as colunas e valores enviados
-  const cols = ['organization_fk'];
-  const values = [orgId];
-  allowed.forEach(key => {
-    if (data[key] !== undefined) {
-      cols.push(key);
-      values.push(data[key]);
-    }
-  });
-
-  // Adiciona timestamps
-  cols.push('status_changed_at', 'published_at');
-  values.push(new Date(), new Date());
-
-  const placeholders = cols.map((_, i) => `$${i+1}`);
   const sql = `
-    INSERT INTO animals(${cols.join(',')})
-    VALUES(${placeholders.join(',')})
-    RETURNING *
+    INSERT INTO animals (
+      organization_fk, url, type, name, description,
+      age, gender, size,
+      primary_color, secondary_color, tertiary_color,
+      breed, spayed_neutered, shots_current,
+      children, dogs, cats,
+      status, status_changed_at, published_at
+    ) VALUES (
+      $1,$2,$3,$4,$5,
+      $6,$7,$8,
+      $9,$10,$11,
+      $12,$13,$14,
+      $15,$16,$17,
+      $18,NOW(),NOW()
+    ) RETURNING *
   `;
+
+  const values = [
+    orgId,
+    url, type, name, description,
+    age, gender, size,
+    primary_color, secondary_color, tertiary_color,
+    breed, spayed_neutered, shots_current,
+    children, dogs, cats,
+    status
+  ];
 
   const { rows } = await pool.query(sql, values);
   return rows[0];
 }
 
 /**
- * Atualiza campos de um animal (só se pertencer à ONG)
+ * Atualiza campos de um animal que pertença à ONG
  */
 async function update(id, orgId, data) {
   const fields = Object.keys(data);
@@ -80,7 +102,8 @@ async function update(id, orgId, data) {
  */
 async function remove(id, orgId) {
   const { rowCount } = await pool.query(
-    `DELETE FROM animals WHERE id = $1 AND organization_fk = $2`,
+    `DELETE FROM animals
+     WHERE id = $1 AND organization_fk = $2`,
     [id, orgId]
   );
   return rowCount > 0;
