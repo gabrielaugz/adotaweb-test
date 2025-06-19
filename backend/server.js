@@ -1,9 +1,11 @@
 // server.js
 require('dotenv').config();
-const path    = require('path');
-const express = require('express');
-const pool = require('./src/lib/db');
-const authRoutes  = require('./src/routes/auth');
+const path             = require('path');
+const express          = require('express');
+const pool             = require('./src/lib/db');
+const authRoutes       = require('./src/routes/auth');
+const authMiddleware   = require('./src/middleware/auth');
+const adminAnimalsRoutes = require('./src/routes/adminAnimals');
 
 const app = express();
 app.use(express.json());
@@ -29,6 +31,8 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
+// Rotas de autenticação
+app.use('/auth', authRoutes);
 /**
  * GET /api/animals
  * Lista animais com filtros e inclui dados da ONG em `contact`
@@ -239,6 +243,9 @@ app.get('/api/animals/:id', async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 });
+
+// Rotas protegidas de administração de animais (CRUD)
+app.use('/api/admin/animals', authMiddleware, adminAnimalsRoutes);
 
 // Inicia o servidor
 const port = process.env.PORT || process.env.API_PORT || 3001;
