@@ -2,44 +2,30 @@
 require('dotenv').config()
 const express = require('express')
 const path    = require('path')
-const authRoutes       = require('./src/routes/auth')
-const adminAnimals     = require('./src/routes/adminAnimals')
-const authMiddleware   = require('./src/middleware/auth')
-const pool             = require('./src/lib/db')
+
+const pool               = require('./src/lib/db')
+const authRoutes         = require('./src/routes/auth')
+const adminAnimalsRoutes = require('./src/routes/adminAnimals')
+const authMiddleware     = require('./src/middleware/auth')
+
 const app = express()
 app.use(express.json())
 
 // CORS básico
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin',  '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  if (req.method === 'OPTIONS') return res.sendStatus(204);
-  next();
-});
+  res.setHeader('Access-Control-Allow-Origin',  '*')
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  if (req.method === 'OPTIONS') return res.sendStatus(204)
+  next()
+})
 
+// ─── Rotas de API ────────────────────────────────────────────
+
+// Autenticação
 app.use('/api/auth', authRoutes)
-app.use('/api/admin/animals', authMiddleware, adminAnimals)
-app.get('/api/animals', /* seu handler existente */)
-app.get('/api/animals/:id', /* handler */)
 
-app.use('/auth', authRoutes);
-
-// Serve React build em produção (ajuste conforme seu layout de pastas)
-if (process.env.NODE_ENV === 'production') {
-  const buildPath = path.join(__dirname, '..', 'frontend', 'build')
-  app.use(express.static(buildPath))
-  app.get(/^\/(?!api).*/, (_req, res) => {
-    res.sendFile(path.join(buildPath, 'index.html'))
-  })
-}
-
-// Rotas de autenticação
-app.use('/auth', authRoutes);
-/**
- * GET /api/animals
- * Lista animais com filtros e inclui dados da ONG em `contact`
- */
+// Listagem pública de animais
 app.get('/api/animals', async (req, res) => {
   const {
     type        = '',
@@ -48,7 +34,7 @@ app.get('/api/animals', async (req, res) => {
     neutered    = '',
     breed       = '',
     puppy       = ''
-  } = req.query;
+  } = req.query
 
   const sql = `
     SELECT
@@ -82,7 +68,7 @@ app.get('/api/animals', async (req, res) => {
     LEFT JOIN organizations org
       ON org.id = a.organization_fk
     WHERE
-      ($1 = ''    OR a.type::text        = $1)     -- << enum cast to text
+      ($1 = ''    OR a.type::text        = $1)
       AND ($2 = '' OR org.city    ILIKE '%'||$2||'%')
       AND (
         $3 = ''
@@ -105,12 +91,11 @@ app.get('/api/animals', async (req, res) => {
         OR ($6 = 'false' AND a.age <> 'Baby')
       )
     LIMIT 100
-  `;
+  `
 
   try {
-    const vals = [type, city, vaccinated, neutered, breed, puppy];
-    const { rows } = await pool.query(sql, vals);
-
+    const vals = [type, city, vaccinated, neutered, breed, puppy]
+    const { rows } = await pool.query(sql, vals)
     const animals = rows.map(r => ({
       id:              r.id,
       type:            r.type,
@@ -135,22 +120,16 @@ app.get('/api/animals', async (req, res) => {
           country:   r.org_country
         }
       }
-    }));
-
-    return res.json({ animals });
+    }))
+    return res.json({ animals })
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: err.message });
+    console.error(err)
+    return res.status(500).json({ error: err.message })
   }
-});
+})
 
-/**
- * GET /api/animals/:id
- * Detalhes completos de um único animal, incluindo contato da ONG.
- */
 app.get('/api/animals/:id', async (req, res) => {
-  const { id } = req.params;
-
+  const { id } = req.params
   const detailSql = `
     SELECT
       a.id,
@@ -185,19 +164,18 @@ app.get('/api/animals/:id', async (req, res) => {
       ON org.id = a.organization_fk
     WHERE a.id = $1
     LIMIT 1
-  `;
-
+  `
   try {
-    const { rows } = await pool.query(detailSql, [id]);
-    const row = rows[0];
-    if (!row) return res.status(404).json({ error: 'Pet não encontrado' });
+    const { rows } = await pool.query(detailSql, [id])
+    const row = rows[0]
+    if (!row) return res.status(404).json({ error: 'Pet não encontrado' })
 
     const photosRes = await pool.query(`
       SELECT url_small AS small, url_medium AS medium, url_large AS large, url_full AS full
       FROM photos
       WHERE animal_id = $1
       ORDER BY slot
-    `, [id]);
+    `, [id])
 
     const animalDetail = {
       id:          row.id,
@@ -238,18 +216,31 @@ app.get('/api/animals/:id', async (req, res) => {
           country:   row.org_country
         }
       }
-    };
+    }
 
-    return res.json(animalDetail);
+    return res.json(animalDetail)
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: err.message });
+    console.error(err)
+    return res.status(500).json({ error: err.message })
   }
-});
+})
 
-// Rotas protegidas de administração de animais (CRUD)
-app.use('/api/admin/animals', authMiddleware, adminAnimalsRoutes);
+// CRUD protegido de administração de animais
+app.use('/api/admin/animals', authMiddleware, adminAnimalsRoutes)
+
+
+// ─── SERVE REACT EM PRODUÇÃO ─────────────────────────────────
+if (process.env.NODE_ENV === 'production') {
+  const buildPath = path.join(__dirname, '..', 'frontend', 'build')
+  app.use(express.static(buildPath))
+  app.get(/^\/(?!api).*/, (_req, res) => {
+    res.sendFile(path.join(buildPath, 'index.html'))
+  })
+}
+
 
 // Inicia o servidor
 const port = process.env.PORT || 3001
-app.listen(port, ()=> console.log(`🐶 rodando na ${port}`))
+app.listen(port, () => {
+  console.log(`🐶 API rodando na porta ${port}`)
+})
