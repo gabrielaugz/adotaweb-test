@@ -12,11 +12,12 @@ export default function LoginPage() {
     setError(null)
 
     try {
-      const res = await fetch('/auth/login', {
+      const base = window.location.origin          // pega https://adotaweb-test-1.onrender.com
+        const res  = await fetch(`${base}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
-      })
+    })
       if (!res.ok) {
         const { error } = await res.json()
         throw new Error(error || res.statusText)
