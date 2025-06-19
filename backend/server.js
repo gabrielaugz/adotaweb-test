@@ -14,7 +14,7 @@ const pool = new Pool({
 const app = express();
 app.use(express.json());
 
-// CORS básico
+// CORS
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin',  '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
@@ -23,7 +23,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve React build em produção
+// Servir React build em produção
 if (process.env.NODE_ENV === 'production') {
   const buildPath = path.join(__dirname, 'frontend', 'build');
   app.use(express.static(buildPath));
@@ -34,8 +34,7 @@ if (process.env.NODE_ENV === 'production') {
 
 /**
  * GET /api/animals
- * Lista animais com filtros (type, city, vaccinated, neutered, breed, puppy),
- * e retorna também dados de contato vindos da tabela organizations.
+ * Lista animais com filtros e traz dados da ONG no campo `contact`.
  */
 app.get('/api/animals', async (req, res) => {
   const {
@@ -44,7 +43,7 @@ app.get('/api/animals', async (req, res) => {
     vaccinated = '',
     neutered   = '',
     breed      = '',
-    puppy      = ''
+    puppy      = '',
   } = req.query;
 
   const sql = `
@@ -56,15 +55,18 @@ app.get('/api/animals', async (req, res) => {
       a.gender,
       a.size,
       a.primary_color,
+      -- foto principal
       COALESCE(p.url_medium, a.url) AS "photoUrl",
-      org.email    AS org_email,
-      org.phone    AS org_phone,
-      org.address1 AS org_address1,
-      org.address2 AS org_address2,
-      org.city     AS org_city,
-      org.state    AS org_state,
-      org.postcode AS org_postcode,
-      org.country  AS org_country,
+      -- dados da ONG
+      org.email       AS org_email,
+      org.phone       AS org_phone,
+      org.address1    AS org_address1,
+      org.address2    AS org_address2,
+      org.city        AS org_city,
+      org.state       AS org_state,
+      org.postcode    AS org_postcode,
+      org.country     AS org_country,
+      -- atributos
       a.shots_current,
       a.spayed_neutered,
       a.breed
@@ -79,25 +81,25 @@ app.get('/api/animals', async (req, res) => {
     LEFT JOIN organizations org
       ON org.id = a.organization_fk
     WHERE
-      ($1 = ''    OR a.type             = $1)
+      ($1 = '' OR a.type             = $1)
       AND ($2 = '' OR org.city    ILIKE '%'||$2||'%')
       AND (
-        $3 = '' 
+        $3 = ''
         OR ($3 = 'true'  AND a.shots_current    = TRUE)
         OR ($3 = 'false' AND a.shots_current    = FALSE)
       )
       AND (
-        $4 = '' 
+        $4 = ''
         OR ($4 = 'true'  AND a.spayed_neutered = TRUE)
         OR ($4 = 'false' AND a.spayed_neutered = FALSE)
       )
       AND (
-        $5 = '' 
+        $5 = ''
         OR ($5 = 'true'  AND a.breed           = TRUE)
         OR ($5 = 'false' AND a.breed           = FALSE)
       )
       AND (
-        $6 = '' 
+        $6 = ''
         OR ($6 = 'true'  AND a.age = 'Baby')
         OR ($6 = 'false' AND a.age <> 'Baby')
       )
@@ -121,8 +123,8 @@ app.get('/api/animals', async (req, res) => {
       spayed_neutered: r.spayed_neutered,
       breed:           r.breed,
       contact: {
-        email:   r.org_email,
-        phone:   r.org_phone,
+        email: r.org_email,
+        phone: r.org_phone,
         address: {
           address1: r.org_address1,
           address2: r.org_address2,
@@ -143,7 +145,7 @@ app.get('/api/animals', async (req, res) => {
 
 /**
  * GET /api/animals/:id
- * Detalhes completos de um único animal, incluindo contato da ONG.
+ * Detalhes de um pet, também com dados da ONG.
  */
 app.get('/api/animals/:id', async (req, res) => {
   const { id } = req.params;
@@ -160,7 +162,7 @@ app.get('/api/animals/:id', async (req, res) => {
       a.primary_color,
       a.secondary_color,
       a.tertiary_color,
-      a.breed           AS breed_flag,
+      a.breed      AS breed_flag,
       a.spayed_neutered,
       a.shots_current,
       a.children,
@@ -169,6 +171,7 @@ app.get('/api/animals/:id', async (req, res) => {
       a.status,
       a.status_changed_at,
       a.published_at,
+      -- ONG
       org.email    AS org_email,
       org.phone    AS org_phone,
       org.address1 AS org_address1,
@@ -201,13 +204,13 @@ app.get('/api/animals/:id', async (req, res) => {
     `, [id]);
 
     const animalDetail = {
-      id:          row.id,
-      type:        row.type,
-      name:        row.name,
+      id:        row.id,
+      type:      row.type,
+      name:      row.name,
       description: row.description,
-      age:         row.age,
-      gender:      row.gender,
-      size:        row.size,
+      age:       row.age,
+      gender:    row.gender,
+      size:      row.size,
       breeds: {
         breed: row.breed_flag
       },
@@ -225,10 +228,10 @@ app.get('/api/animals/:id', async (req, res) => {
         dogs:     row.dogs,
         cats:     row.cats
       },
-      status:               row.status,
-      status_changed_at:    row.status_changed_at,
-      published_at:         row.published_at,
-      photos:               photosRes.rows,
+      status:             row.status,
+      status_changed_at:  row.status_changed_at,
+      published_at:       row.published_at,
+      photos:             photosRes.rows,
       contact: {
         email: row.org_email,
         phone: row.org_phone,
