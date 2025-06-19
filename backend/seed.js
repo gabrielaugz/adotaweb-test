@@ -2,6 +2,7 @@
 require('dotenv').config();
 const fs   = require('fs').promises;
 const path = require('path');
+const bcrypt = require('bcrypt');
 const { Pool } = require('pg');
 
 const pool = new Pool({
@@ -9,7 +10,34 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
+async function seedOrganizationCredentials() {
+  console.log('🔐 Seeding organization credentials...');
+  // 1) busca id e cnpj de todas as ONGs sem hash ainda
+  const { rows: orgs } = await pool.query(
+    `SELECT id, cnpj FROM organizations WHERE password_hash IS NULL`
+  );
+
+  for (const { id, cnpj } of orgs) {
+    // 2) limpa formato, deixando só dígitos
+    const plain = cnpj.replace(/\D/g, '');
+    // 3) gera o hash (cost = 10)
+    const hash = await bcrypt.hash(plain, 10);
+    // 4) atualiza registro
+    await pool.query(
+      `UPDATE organizations
+         SET password_hash = $1,
+             created_at    = NOW()
+       WHERE id = $2`,
+      [hash, id]
+    );
+    console.log(` ONG ${id}: hash gerado de "${plain}"`);
+  }
+
+  console.log('✅ Organization credentials seeded');
+}
+
 async function seedAnimals() {
+  console.log('🦴 Seeding animals...');
   const file = path.join(__dirname, 'src', 'mocks', 'data', 'animals.json');
   const { animals } = JSON.parse(await fs.readFile(file, 'utf8'));
 
@@ -35,7 +63,7 @@ async function seedAnimals() {
     await pool.query(
       `INSERT INTO animals(
          id,
-         organization_fk,       -- agora a FK para organizations
+         organization_fk,
          url,
          type,
          name,
@@ -67,7 +95,7 @@ async function seedAnimals() {
        ON CONFLICT (id) DO NOTHING`,
       [
         a.id,
-        orgFk,                      // <-- aqui
+        orgFk,
         a.url,
         a.type,
         a.name,
@@ -92,11 +120,12 @@ async function seedAnimals() {
     );
   }
 
-  console.log('✅ animals seeded');
+  console.log('✅ Animals seeded');
 }
 
 async function main() {
   try {
+    await seedOrganizationCredentials();
     await seedAnimals();
   } catch (err) {
     console.error(err);
