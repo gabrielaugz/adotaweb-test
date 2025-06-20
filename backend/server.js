@@ -219,7 +219,7 @@ app.get('/api/animals/:id', async (req, res) => {
   }
 })
 
-// CRUD protegido de administração de animais
+console.log('>>> Montando rota ADMIN CRUD em: /api/admin/animals');
 app.use('/api/admin/animals', adminAnimalsRoutes)
 
 // ─── SERVE REACT EM PRODUÇÃO ─────────────────────────────────
