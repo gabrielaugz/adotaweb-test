@@ -3,9 +3,9 @@ const express = require('express')
 const router  = express.Router()
 const {
   createRequest,
-  getRequestsByPet
+  getRequestsByPet,
+  removeRequest
 } = require('../lib/adoptionRequests')
-const { createRequest, getRequestsByPet, removeRequest } = require('../lib/adoptionRequests')
 
 // POST /api/adoptions
 router.post('/', async (req, res) => {
