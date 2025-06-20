@@ -227,13 +227,11 @@ console.log('>>> Montando rota ADMIN CRUD em: /api/admin/animals');
 app.use('/api/admin/animals', adminAnimalsRoutes)
 
 // ─── SERVE REACT EM PRODUÇÃO ─────────────────────────────────
-if (process.env.NODE_ENV === 'production') {
-  const buildPath = path.join(__dirname, '..', 'frontend', 'build')
-  app.use(express.static(buildPath))
-  app.get(/^\/(?!api).*/, (_req, res) => {
-    res.sendFile(path.join(buildPath, 'index.html'))
-  })
-}
+const buildPath = path.join(__dirname, '..', 'frontend', 'build')
+app.use(express.static(buildPath))
+app.get(/^\/(?!api).*/, (_req, res) => {
+  res.sendFile(path.join(buildPath, 'index.html'))
+})
 
 // Inicia o servidor
 const port = process.env.PORT || 3001
