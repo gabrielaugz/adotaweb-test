@@ -4,6 +4,7 @@ const express = require('express')
 const path    = require('path')
 const pool               = require('./src/lib/db')
 const adminAnimalsRoutes = require('./src/routes/adminAnimals')
+const orgRoutes          = require('./src/routes/organizations');
 
 const app = express()
 app.use(express.json())
@@ -220,19 +221,7 @@ app.get('/api/animals/:id', async (req, res) => {
 })
 
 // GET /api/organizations
-app.get('/api/organizations', async (_req, res) => {
-  try {
-    const { rows } = await pool.query(`
-      SELECT id, name
-        FROM organizations
-       ORDER BY name
-    `);
-    return res.json({ organizations: rows });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'Erro ao listar organizações' });
-  }
-});
+app.use('/api/organizations', orgRoutes);
 
 console.log('>>> Montando rota ADMIN CRUD em: /api/admin/animals');
 app.use('/api/admin/animals', adminAnimalsRoutes)
