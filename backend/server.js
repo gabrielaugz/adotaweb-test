@@ -86,7 +86,7 @@ app.get('/api/animals', async (req, res) => {
         OR ($6 = 'true'  AND a.age = 'Baby')
         OR ($6 = 'false' AND a.age <> 'Baby')
       )
-      AND a.status = 'available'
+      AND a.status = 'adoptable'
     LIMIT 100
   `
 
