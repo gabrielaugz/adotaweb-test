@@ -51,4 +51,4 @@ async function removeRequest(requestId) {
   return rowCount > 0
 }
 
-module.exports = { createRequest, getRequestsByPet }
+module.exports = { createRequest, getRequestsByPet, removeRequest }
