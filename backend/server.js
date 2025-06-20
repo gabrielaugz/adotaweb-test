@@ -2,11 +2,8 @@
 require('dotenv').config()
 const express = require('express')
 const path    = require('path')
-
 const pool               = require('./src/lib/db')
-const authRoutes         = require('./src/routes/auth')
 const adminAnimalsRoutes = require('./src/routes/adminAnimals')
-const authMiddleware     = require('./src/middleware/auth')
 
 const app = express()
 app.use(express.json())
@@ -21,9 +18,6 @@ app.use((req, res, next) => {
 })
 
 // ─── Rotas de API ────────────────────────────────────────────
-
-// Autenticação
-app.use('/api/auth', authRoutes)
 
 // Listagem pública de animais
 app.get('/api/animals', async (req, res) => {
@@ -226,8 +220,7 @@ app.get('/api/animals/:id', async (req, res) => {
 })
 
 // CRUD protegido de administração de animais
-app.use('/api/admin/animals', authMiddleware, adminAnimalsRoutes)
-
+app.use('/api/admin/animals', adminAnimalsRoutes)
 
 // ─── SERVE REACT EM PRODUÇÃO ─────────────────────────────────
 if (process.env.NODE_ENV === 'production') {
@@ -237,7 +230,6 @@ if (process.env.NODE_ENV === 'production') {
     res.sendFile(path.join(buildPath, 'index.html'))
   })
 }
-
 
 // Inicia o servidor
 const port = process.env.PORT || 3001
