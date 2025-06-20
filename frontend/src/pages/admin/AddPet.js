@@ -1,8 +1,7 @@
-// frontend/src/pages/admin/AddPet.js
+// src/frontend/src/pages/admin/AddPet.js
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE } from '../../utils/api';
-import './AddPet.css'; // estilização, se houver
 
 export default function AddPet() {
   const navigate = useNavigate();
@@ -48,7 +47,6 @@ export default function AddPet() {
         const errText = await res.text();
         throw new Error(errText || `Erro ${res.status}`);
       }
-      // pet criado, volta para lista
       navigate('/admin', { replace: true });
     } catch (err) {
       setError(err.message);
@@ -79,7 +77,6 @@ export default function AddPet() {
           Idade:
           <input name="age" value={formData.age} onChange={handleChange} />
         </label>
-        {/* adicione aqui outros campos conforme necessário */}
         <button type="submit">Salvar</button>
         <button type="button" onClick={() => navigate('/admin')} className="btn-cancel">
           Cancelar
