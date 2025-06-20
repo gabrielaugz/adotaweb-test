@@ -61,7 +61,7 @@ async function create(data) {
     children = false,
     dogs = false,
     cats = false,
-    status = 'available'
+    status = 'adoptable'
   } = data;
 
   const sql = `

@@ -22,7 +22,7 @@ export default function AddPet() {
     children: false,
     dogs: false,
     cats: false,
-    status: 'available',
+    status: 'adoptable',
     organization_fk: ''
   });
   const [orgs, setOrgs] = useState([]);
