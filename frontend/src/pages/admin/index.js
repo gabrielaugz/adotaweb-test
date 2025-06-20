@@ -2,12 +2,15 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { API_BASE } from '../../utils/api'
+import { getAdoptionRequests } from '../../api/adoptionRequests'
 
 const AdminPage = () => {
   const [pets, setPets]             = useState([])
   const [searchTerm, setSearchTerm] = useState('')
   const [isLoading, setIsLoading]   = useState(true)
   const [error, setError]           = useState(null)
+  const [openPetId, setOpenPetId]   = useState(null)
+  const [requestsByPet, setRequestsByPet] = useState({})
   const navigate                    = useNavigate()
 
   useEffect(() => {
@@ -21,13 +24,10 @@ const AdminPage = () => {
           { headers: { Authorization: `Bearer ${token}` } }
         )
         if (res.status === 401) {
-          // token inválido ou expirado
           localStorage.removeItem('token')
           return navigate('/admin/login', { replace: true })
         }
-        if (!res.ok) {
-          throw new Error(`Erro ${res.status}: ${res.statusText}`)
-        }
+        if (!res.ok) throw new Error(`Erro ${res.status}: ${res.statusText}`)
         const data = await res.json()
         setPets(data)
       } catch (err) {
@@ -36,21 +36,25 @@ const AdminPage = () => {
         setIsLoading(false)
       }
     }
-
     fetchPets()
   }, [navigate])
 
+  // Carrega solicitações para cada pet quando abrir
+  useEffect(() => {
+    if (openPetId !== null) {
+      getAdoptionRequests(openPetId)
+        .then(resp => setRequestsByPet(prev => ({ ...prev, [openPetId]: resp.requests })))
+        .catch(err => console.error(err))
+    }
+  }, [openPetId])
+
   const handleDelete = async (id) => {
     if (!window.confirm('Tem certeza que deseja remover este animal?')) return
-
     try {
       const token = localStorage.getItem('token')
       const res = await fetch(
         `${API_BASE}/api/admin/animals/${id}`,
-        {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${token}` }
-        }
+        { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }
       )
       if (res.status === 204) {
         setPets(prev => prev.filter(pet => pet.id !== id))
@@ -92,7 +96,6 @@ const AdminPage = () => {
   return (
     <div className="admin-container">
       <h1>Área do Administrador</h1>
-
       <div className="admin-actions">
         <Link to="/admin/add-pet" className="btn btn-primary">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -100,7 +103,6 @@ const AdminPage = () => {
           </svg>
           Adicionar Animal
         </Link>
-
         <div className="search-box">
           <input
             type="text"
@@ -139,26 +141,45 @@ const AdminPage = () => {
             </thead>
             <tbody>
               {filteredPets.map(pet => (
-                <tr key={pet.id}>
-                  <td>{pet.id}</td>
-                  <td>{pet.name}</td>
-                  <td>{pet.type}</td>
-                  <td>{pet.breed}</td>
-                  <td>{pet.age} {pet.age === 1 ? 'ano' : 'anos'}</td>
-                  <td>{pet.organization_name || '—'}</td>
-                  <td className="actions">
-                    <Link to={`/admin/edit-pet/${pet.id}`} className="btn-icon btn-edit" title="Editar">
-                      ✏️
-                    </Link>
-                    <button
-                      onClick={() => handleDelete(pet.id)}
-                      className="btn-icon btn-delete"
-                      title="Remover"
-                    >
-                      🗑️
-                    </button>
-                  </td>
-                </tr>
+                <React.Fragment key={pet.id}>
+                  <tr>
+                    <td>{pet.id}</td>
+                    <td>{pet.name}</td>
+                    <td>{pet.type}</td>
+                    <td>{pet.breed}</td>
+                    <td>{pet.age} {pet.age === 1 ? 'ano' : 'anos'}</td>
+                    <td>{pet.organization_name || '—'}</td>
+                    <td className="actions">
+                      <Link to={`/admin/edit-pet/${pet.id}`} className="btn-icon btn-edit" title="Editar">
+                        ✏️
+                      </Link>
+                      <button onClick={() => handleDelete(pet.id)} className="btn-icon btn-delete" title="Remover">
+                        🗑️
+                      </button>
+                      <button onClick={() => setOpenPetId(openPetId === pet.id ? null : pet.id)} className="btn-icon btn-view" title="Ver Solicitações">
+                        {openPetId === pet.id ? 'Ocultar Solicitações' : 'Ver Solicitações'}
+                      </button>
+                    </td>
+                  </tr>
+                  {openPetId === pet.id && (
+                    <tr>
+                      <td colSpan="7">
+                        {requestsByPet[pet.id]?.length > 0 ? (
+                          <ul>
+                            {requestsByPet[pet.id].map(r => (
+                              <li key={r.id} style={{ marginBottom: '0.5rem' }}>
+                                <strong>{r.name}</strong> ({r.email}) – {new Date(r.created_at).toLocaleString()}
+                                <p>{r.message}</p>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p>Nenhuma solicitação para este animal.</p>
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               ))}
             </tbody>
           </table>

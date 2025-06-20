@@ -5,6 +5,7 @@ const path    = require('path')
 const pool               = require('./src/lib/db')
 const adminAnimalsRoutes = require('./src/routes/adminAnimals')
 const orgRoutes          = require('./src/routes/organizations');
+const adoptionRoutes     = require('./src/routes/adoptionRequests')
 
 const app = express()
 app.use(express.json())
@@ -225,6 +226,8 @@ app.use('/api/organizations', orgRoutes);
 
 console.log('>>> Montando rota ADMIN CRUD em: /api/admin/animals');
 app.use('/api/admin/animals', adminAnimalsRoutes)
+
+app.use('/api/adoptions', adoptionRoutes)
 
 // ─── SERVE REACT EM PRODUÇÃO ─────────────────────────────────
 const buildPath = path.join(__dirname, '..', 'frontend', 'build')
