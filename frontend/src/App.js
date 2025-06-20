@@ -31,7 +31,7 @@ const appRouter = createBrowserRouter(
       <Route path='contact' element={<ContactPage />} />
 
       {/* Admin (CRUD sem autenticação) */}
-      <Route path='admin' element={<AdminPage />} />
+      <Route index element={<AdminPage />} />
       <Route path="add-pet" element={<AddPet />} />
     </Route>
   )
