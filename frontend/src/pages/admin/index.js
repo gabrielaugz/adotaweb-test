@@ -1,6 +1,7 @@
-// src/pages/admin/index.js
+// src/frontend/src/pages/admin/index.js
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { API_BASE } from '../../utils/api'
 
 const AdminPage = () => {
   const [pets, setPets]             = useState([])
@@ -15,11 +16,10 @@ const AdminPage = () => {
       setError(null)
       try {
         const token = localStorage.getItem('token')
-        const res = await fetch('/api/admin/animals', {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        })
+        const res = await fetch(
+          `${API_BASE}/api/admin/animals`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
         if (res.status === 401) {
           // token inválido ou expirado
           localStorage.removeItem('token')
@@ -29,7 +29,7 @@ const AdminPage = () => {
           throw new Error(`Erro ${res.status}: ${res.statusText}`)
         }
         const data = await res.json()
-        setPets(data)    // data é um array vindo do servidor
+        setPets(data)
       } catch (err) {
         setError(err.message)
       } finally {
@@ -45,12 +45,13 @@ const AdminPage = () => {
 
     try {
       const token = localStorage.getItem('token')
-      const res = await fetch(`/api/admin/animals/${id}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`
+      const res = await fetch(
+        `${API_BASE}/api/admin/animals/${id}`,
+        {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
         }
-      })
+      )
       if (res.status === 204) {
         setPets(prev => prev.filter(pet => pet.id !== id))
         alert('Animal removido com sucesso!')
@@ -68,7 +69,7 @@ const AdminPage = () => {
 
   const filteredPets = pets.filter(pet =>
     pet.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    pet.breed.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (pet.breed && pet.breed.toLowerCase().includes(searchTerm.toLowerCase())) ||
     pet.type.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
@@ -132,6 +133,7 @@ const AdminPage = () => {
                 <th>Tipo</th>
                 <th>Raça</th>
                 <th>Idade</th>
+                <th>Organização</th>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -143,6 +145,7 @@ const AdminPage = () => {
                   <td>{pet.type}</td>
                   <td>{pet.breed}</td>
                   <td>{pet.age} {pet.age === 1 ? 'ano' : 'anos'}</td>
+                  <td>{pet.organization_name || '—'}</td>
                   <td className="actions">
                     <Link to={`/admin/edit-pet/${pet.id}`} className="btn-icon btn-edit" title="Editar">
                       ✏️
