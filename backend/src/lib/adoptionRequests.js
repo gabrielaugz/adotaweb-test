@@ -1,15 +1,14 @@
-// backend/src/lib/adoptionRequests.js
+// src/backend/src/lib/adoptionRequests.js
 const pool = require('./db')
 
 /**
- * Cria uma nova solicitação de adoção
- * @param {{ pet_id, name, email, phone, address, experience, message }} data
+ * Grava uma solicitação no banco
  */
 async function createRequest(data) {
   const sql = `
     INSERT INTO adoption_requests
       (pet_id, name, email, phone, address, experience, message, created_at)
-    VALUES ($1,$2,$3,$4,$5,$6,$7, NOW())
+    VALUES ($1,$2,$3,$4,$5,$6,$7,NOW())
     RETURNING *`
   const vals = [
     data.petId,
@@ -25,8 +24,7 @@ async function createRequest(data) {
 }
 
 /**
- * Lista todas as solicitações de um pet
- * @param {number} petId
+ * Lê todas as solicitações de um pet
  */
 async function getRequestsByPet(petId) {
   const { rows } = await pool.query(
