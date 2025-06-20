@@ -1,5 +1,5 @@
 // src/frontend/src/pages/admin/AddPet.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE } from '../../utils/api';
 
@@ -22,9 +22,19 @@ export default function AddPet() {
     children: false,
     dogs: false,
     cats: false,
-    status: 'available'
+    status: 'available',
+    organization_fk: ''
   });
+  const [orgs, setOrgs] = useState([]);
   const [error, setError] = useState(null);
+
+  // Busca lista de ONGs para o select
+  useEffect(() => {
+    fetch(`${API_BASE}/api/organizations`)
+      .then(res => res.json())
+      .then(data => setOrgs(data.organizations || []))
+      .catch(console.error);
+  }, []);
 
   function handleChange(e) {
     const { name, type, value, checked } = e.target;
@@ -59,6 +69,22 @@ export default function AddPet() {
       {error && <p className="error">{error}</p>}
       <form onSubmit={handleSubmit} className="add-pet-form">
         <label>
+          Organização:
+          <select
+            name="organization_fk"
+            value={formData.organization_fk}
+            onChange={handleChange}
+            required
+          >
+            <option value="">Selecione...</option>
+            {orgs.map(org => (
+              <option key={org.id} value={org.id}>
+                {org.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
           Tipo:
           <select name="type" value={formData.type} onChange={handleChange} required>
             <option>Dog</option>
@@ -77,6 +103,7 @@ export default function AddPet() {
           Idade:
           <input name="age" value={formData.age} onChange={handleChange} />
         </label>
+        {/* outros campos */}
         <button type="submit">Salvar</button>
         <button type="button" onClick={() => navigate('/admin')} className="btn-cancel">
           Cancelar
