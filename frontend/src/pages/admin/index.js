@@ -7,113 +7,115 @@ import { getAdoptionRequests } from '../../api/adoptionRequests'
 export default function AdminPage() {
   const [pets, setPets]             = useState([])
   const [searchTerm, setSearchTerm] = useState('')
-  const [isLoading, setIsLoading]   = useState(true)
+  const [loading, setLoading]       = useState(true)
   const [error, setError]           = useState(null)
   const [openPetId, setOpenPetId]   = useState(null)
   const [requestsByPet, setRequestsByPet] = useState({})
-  const navigate                    = useNavigate()
+  const navigate = useNavigate()
 
-  // Carrega lista de pets
+  // load pets
   useEffect(() => {
-    async function fetchPets() {
-      setIsLoading(true)
+    async function load() {
+      setLoading(true)
       setError(null)
       try {
         const res = await fetch(`${API_BASE}/api/admin/animals`)
-        if (!res.ok) throw new Error(`Erro ${res.status}: ${res.statusText}`)
-        const data = await res.json()
-        setPets(data)
+        if (!res.ok) throw new Error(res.statusText)
+        setPets(await res.json())
       } catch (err) {
         setError(err.message)
       } finally {
-        setIsLoading(false)
+        setLoading(false)
       }
     }
-    fetchPets()
+    load()
   }, [])
 
-  // Carrega solicitações ao abrir cada pet
+  // when expanding a pet, load its adoption requests
   useEffect(() => {
     if (openPetId !== null) {
       getAdoptionRequests(openPetId)
-        .then(resp => {
+        .then(resp =>
           setRequestsByPet(prev => ({
             ...prev,
             [openPetId]: resp.requests
           }))
-        })
+        )
         .catch(console.error)
     }
   }, [openPetId])
 
-  // Exclui um pet
-  const handleDeletePet = async (id) => {
-    if (!window.confirm('Tem certeza que deseja remover este animal?')) return
-    try {
-      const res = await fetch(`${API_BASE}/api/admin/animals/${id}`, {
-        method: 'DELETE'
-      })
-      if (res.status === 204) {
-        setPets(prev => prev.filter(p => p.id !== id))
-      } else {
-        const text = await res.text()
-        throw new Error(text || res.statusText)
-      }
-    } catch (err) {
-      alert('Falha ao remover animal: ' + err.message)
+  // delete pet
+  async function handleDeletePet(petId) {
+    if (!window.confirm('Remover este animal?')) return
+    const res = await fetch(`${API_BASE}/api/admin/animals/${petId}`, {
+      method: 'DELETE'
+    })
+    if (res.status === 204) {
+      setPets(p => p.filter(x => x.id !== petId))
+    } else {
+      alert('Falha ao remover animal')
     }
   }
 
-  // Aprova adoção (altera status do pet)
-  const handleApprovePet = async (petId) => {
-    if (!window.confirm('Aprovar adoção deste pet?')) return
-    try {
-      const res = await fetch(`${API_BASE}/api/admin/animals/${petId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'adopted' })
-      })
-      if (!res.ok) throw new Error(`Erro ${res.status}`)
-      // opcional: remover da lista
-      setPets(prev => prev.filter(p => p.id !== petId))
-    } catch (err) {
-      alert('Falha ao aprovar pet: ' + err.message)
+  // approve a specific request (and mark pet unavailable)
+  async function handleApproveRequest(petId, requestId) {
+    if (!window.confirm('Aprovar esta solicitação?')) return
+
+    // 1) update request status
+    const res1 = await fetch(`${API_BASE}/api/adoptions/${requestId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'approved' })
+    })
+    if (!res1.ok) {
+      alert('Falha ao aprovar solicitação')
+      return
     }
+
+    // 2) update pet status
+    const res2 = await fetch(`${API_BASE}/api/admin/animals/${petId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'unavailable' })
+    })
+    if (!res2.ok) {
+      alert('Falha ao marcar pet como indisponível')
+      return
+    }
+
+    // remove pet from list
+    setPets(p => p.filter(x => x.id !== petId))
+    alert('Solicitação aprovada e pet removido do catálogo')
   }
 
-  // Exclui uma solicitação específica
-  const handleDeleteRequest = async (petId, requestId) => {
+  // delete a specific request
+  async function handleDeleteRequest(petId, requestId) {
     if (!window.confirm('Excluir esta solicitação?')) return
-    try {
-      const res = await fetch(`${API_BASE}/api/adoptions/${requestId}`, {
-        method: 'DELETE'
-      })
-      if (res.status === 204) {
-        setRequestsByPet(prev => ({
-          ...prev,
-          [petId]: prev[petId].filter(r => r.id !== requestId)
-        }))
-      } else {
-        const text = await res.text()
-        throw new Error(text || res.statusText)
-      }
-    } catch (err) {
-      alert('Falha ao excluir solicitação: ' + err.message)
+    const res = await fetch(`${API_BASE}/api/adoptions/${requestId}`, {
+      method: 'DELETE'
+    })
+    if (res.status === 204) {
+      setRequestsByPet(prev => ({
+        ...prev,
+        [petId]: prev[petId].filter(r => r.id !== requestId)
+      }))
+    } else {
+      alert('Falha ao excluir solicitação')
     }
   }
 
-  const filteredPets = pets.filter(pet =>
-    pet.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    pet.type.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  if (loading) return <p>Carregando animais...</p>
+  if (error)   return <p>Erro: {error}</p>
 
-  if (isLoading) return <p>Carregando animais...</p>
-  if (error)   return <p>Erro ao carregar animais: {error}</p>
+  const filtered = pets.filter(p =>
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.type.toLowerCase().includes(searchTerm.toLowerCase())
+  )
 
   return (
     <div className="admin-container">
       <h1>Área do Administrador</h1>
-
       <div className="admin-actions">
         <Link to="/admin/add-pet" className="btn btn-primary">
           + Adicionar Animal
@@ -130,31 +132,25 @@ export default function AdminPage() {
       <table className="pets-list">
         <thead>
           <tr>
-            <th>ID</th>
-            <th>Nome</th>
-            <th>Tipo</th>
-            <th>Ações</th>
+            <th>ID</th><th>Nome</th><th>Tipo</th><th>Ações</th>
           </tr>
         </thead>
         <tbody>
-          {filteredPets.map(pet => (
+          {filtered.map(pet => (
             <React.Fragment key={pet.id}>
               <tr>
                 <td>{pet.id}</td>
                 <td>{pet.name}</td>
                 <td>{pet.type}</td>
                 <td>
-                  <button onClick={() => handleApprovePet(pet.id)}>
-                    Aprovar
-                  </button>
-                  <button onClick={() => handleDeletePet(pet.id)} style={{ marginLeft: '0.5rem' }}>
+                  <Link to={`/admin/edit-pet/${pet.id}`} style={{ marginRight:'0.5rem' }}>
+                    ✏️
+                  </Link>
+                  <button onClick={() => handleDeletePet(pet.id)} style={{ marginRight:'0.5rem' }}>
                     🗑️
                   </button>
-                  <button
-                    onClick={() => setOpenPetId(openPetId === pet.id ? null : pet.id)}
-                    style={{ marginLeft: '0.5rem' }}
-                  >
-                    {openPetId === pet.id ? 'Ocultar Solicitações' : 'Ver Solicitações'}
+                  <button onClick={() => setOpenPetId(openPetId===pet.id?null:pet.id)}>
+                    {openPetId===pet.id ? 'Ocultar Solicitações' : 'Ver Solicitações'}
                   </button>
                 </td>
               </tr>
@@ -164,15 +160,21 @@ export default function AdminPage() {
                     {requestsByPet[pet.id]?.length > 0 ? (
                       <ul>
                         {requestsByPet[pet.id].map(r => (
-                          <li key={r.id} style={{ marginBottom: '1rem' }}>
+                          <li key={r.id} style={{ marginBottom:'1rem' }}>
                             <div>
-                              <strong>{r.name}</strong> ({r.email}) —{' '}
+                              <strong>{r.name}</strong> ({r.email}) –{' '}
                               {new Date(r.created_at).toLocaleString()}
                             </div>
                             <p>{r.message}</p>
                             <button
+                              onClick={() => handleApproveRequest(pet.id, r.id)}
+                              style={{ marginRight:'0.5rem' }}
+                            >
+                              Aprovar Solicitação
+                            </button>
+                            <button
                               onClick={() => handleDeleteRequest(pet.id, r.id)}
-                              style={{ color: 'red' }}
+                              style={{ color:'red' }}
                             >
                               Excluir Solicitação
                             </button>
