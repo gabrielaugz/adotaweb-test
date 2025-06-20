@@ -9,6 +9,7 @@ import AboutPage from './pages/about'
 import ContactPage from './pages/contact'
 import AdminPage from './pages/admin'
 import AddPet from './pages/admin/AddPet'
+import EditPet   from './pages/admin/EditPet'
 
 import {
   RouterProvider,
@@ -35,6 +36,7 @@ const appRouter = createBrowserRouter(
       <Route path='admin'>
         <Route index element={<AdminPage />} />
         <Route path='add-pet' element={<AddPet />} />
+        <Route path='edit-pet/:id' element={<EditPet />} />
       </Route>
     </Route>
   )
