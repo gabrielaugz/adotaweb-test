@@ -10,7 +10,7 @@ export default function EditPet() {
 
   // 1) buscar dados atuais do pet
   useEffect(() => {
-    fetch(`${API_BASE}/api/admin/animals/${id}`)
+    fetch(`${API_BASE}/api/animals/${id}`)
       .then(res => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         return res.json()
