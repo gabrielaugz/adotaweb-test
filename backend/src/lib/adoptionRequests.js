@@ -51,4 +51,23 @@ async function removeRequest(requestId) {
   return rowCount > 0
 }
 
-module.exports = { createRequest, getRequestsByPet, removeRequest }
+async function updateRequest(requestId, fields) {
+  // fields poderá ser { status: 'approved' } ou { status:'denied' }
+  const keys = Object.keys(fields)
+  if (keys.length === 0) return null
+
+  const assignments = keys.map((k,i) => `"${k}"=$${i+2}`)
+  const values = keys.map(k => fields[k])
+  values.unshift(requestId)
+
+  const sql = `
+    UPDATE adoption_requests
+       SET ${assignments.join(',')}
+     WHERE id = $1
+     RETURNING *
+  `
+  const { rows } = await pool.query(sql, values)
+  return rows[0] || null
+}
+
+module.exports = { createRequest, getRequestsByPet, removeRequest, updateRequest }

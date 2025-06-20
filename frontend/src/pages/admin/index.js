@@ -13,9 +13,9 @@ export default function AdminPage() {
   const [requestsByPet, setRequestsByPet] = useState({})
   const navigate = useNavigate()
 
-  // load pets
+  // 1) Carrega lista de pets
   useEffect(() => {
-    async function load() {
+    async function loadPets() {
       setLoading(true)
       setError(null)
       try {
@@ -28,10 +28,10 @@ export default function AdminPage() {
         setLoading(false)
       }
     }
-    load()
+    loadPets()
   }, [])
 
-  // when expanding a pet, load its adoption requests
+  // 2) Ao expandir um pet, carrega suas solicitações
   useEffect(() => {
     if (openPetId !== null) {
       getAdoptionRequests(openPetId)
@@ -45,7 +45,7 @@ export default function AdminPage() {
     }
   }, [openPetId])
 
-  // delete pet
+  // 3) Remove um animal
   async function handleDeletePet(petId) {
     if (!window.confirm('Remover este animal?')) return
     const res = await fetch(`${API_BASE}/api/admin/animals/${petId}`, {
@@ -58,51 +58,58 @@ export default function AdminPage() {
     }
   }
 
-  // approve a specific request (and mark pet unavailable)
+  // 4) Aprova uma solicitação: atualiza status da solicitação e do pet
   async function handleApproveRequest(petId, requestId) {
     if (!window.confirm('Aprovar esta solicitação?')) return
 
-    // 1) update request status
-    const res1 = await fetch(`${API_BASE}/api/adoptions/${requestId}`, {
+    // aprovar a própria solicitação
+    const resReq = await fetch(`${API_BASE}/api/adoptions/${requestId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'approved' })
     })
-    if (!res1.ok) {
+    if (!resReq.ok) {
       alert('Falha ao aprovar solicitação')
       return
     }
 
-    // 2) update pet status
-    const res2 = await fetch(`${API_BASE}/api/admin/animals/${petId}`, {
+    // marcar pet como indisponível
+    const resPet = await fetch(`${API_BASE}/api/admin/animals/${petId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'unavailable' })
     })
-    if (!res2.ok) {
+    if (!resPet.ok) {
       alert('Falha ao marcar pet como indisponível')
       return
     }
 
-    // remove pet from list
+    // atualizar UI
     setPets(p => p.filter(x => x.id !== petId))
+    setRequestsByPet(prev => {
+      const copy = { ...prev }
+      delete copy[petId]
+      return copy
+    })
     alert('Solicitação aprovada e pet removido do catálogo')
   }
 
-  // delete a specific request
-  async function handleDeleteRequest(petId, requestId) {
-    if (!window.confirm('Excluir esta solicitação?')) return
+  // 5) Nega (denies) uma solicitação sem apagar o registro
+  async function handleDenyRequest(petId, requestId) {
+    if (!window.confirm('Negar esta solicitação?')) return
     const res = await fetch(`${API_BASE}/api/adoptions/${requestId}`, {
-      method: 'DELETE'
+      method: 'PUT',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ status: 'denied' })
     })
-    if (res.status === 204) {
-      setRequestsByPet(prev => ({
-        ...prev,
-        [petId]: prev[petId].filter(r => r.id !== requestId)
-      }))
-    } else {
-      alert('Falha ao excluir solicitação')
+    if (!res.ok) {
+      alert('Falha ao negar solicitação')
+      return
     }
+    setRequestsByPet(prev => ({
+      ...prev,
+      [petId]: prev[petId].filter(r => r.id !== requestId)
+    }))
   }
 
   if (loading) return <p>Carregando animais...</p>
@@ -149,11 +156,12 @@ export default function AdminPage() {
                   <button onClick={() => handleDeletePet(pet.id)} style={{ marginRight:'0.5rem' }}>
                     🗑️
                   </button>
-                  <button onClick={() => setOpenPetId(openPetId===pet.id?null:pet.id)}>
-                    {openPetId===pet.id ? 'Ocultar Solicitações' : 'Ver Solicitações'}
+                  <button onClick={() => setOpenPetId(openPetId === pet.id ? null : pet.id)}>
+                    {openPetId === pet.id ? 'Ocultar Solicitações' : 'Ver Solicitações'}
                   </button>
                 </td>
               </tr>
+
               {openPetId === pet.id && (
                 <tr>
                   <td colSpan="4">
@@ -162,7 +170,7 @@ export default function AdminPage() {
                         {requestsByPet[pet.id].map(r => (
                           <li key={r.id} style={{ marginBottom:'1rem' }}>
                             <div>
-                              <strong>{r.name}</strong> ({r.email}) –{' '}
+                              <strong>{r.name}</strong> ({r.email}) —{' '}
                               {new Date(r.created_at).toLocaleString()}
                             </div>
                             <p>{r.message}</p>
@@ -173,10 +181,10 @@ export default function AdminPage() {
                               Aprovar Solicitação
                             </button>
                             <button
-                              onClick={() => handleDeleteRequest(pet.id, r.id)}
+                              onClick={() => handleDenyRequest(pet.id, r.id)}
                               style={{ color:'red' }}
                             >
-                              Excluir Solicitação
+                              Negar Solicitação
                             </button>
                           </li>
                         ))}
