@@ -9,9 +9,9 @@ const {
 } = require('../lib/animals');
 
 // GET  /api/admin/animals
-router.get('/', async (req, res) => {
+router.get('/', async (_req, res) => {
   try {
-    const rows = await getAll(req.organization.id);
+    const rows = await getAll();             // sem organização
     return res.json(rows);
   } catch (err) {
     console.error(err);
@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
 // POST /api/admin/animals
 router.post('/', async (req, res) => {
   try {
-    const novo = await createAnimal(req.organization.id, req.body);
+    const novo = await createAnimal(req.body);  // sem organização
     return res.status(201).json(novo);
   } catch (err) {
     console.error(err);
@@ -34,9 +34,9 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const atualizado = await updateAnimal(id, req.organization.id, req.body);
+    const atualizado = await updateAnimal(id, req.body);  // sem organização
     if (!atualizado) {
-      return res.status(404).json({ error: 'Animal não encontrado ou sem permissão' });
+      return res.status(404).json({ error: 'Animal não encontrado' });
     }
     return res.json(atualizado);
   } catch (err) {
@@ -49,9 +49,9 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const ok = await removeAnimal(id, req.organization.id);
+    const ok = await removeAnimal(id);      // sem organização
     if (!ok) {
-      return res.status(404).json({ error: 'Animal não encontrado ou sem permissão' });
+      return res.status(404).json({ error: 'Animal não encontrado' });
     }
     return res.status(204).send();
   } catch (err) {
