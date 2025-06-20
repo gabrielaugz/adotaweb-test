@@ -1,3 +1,4 @@
+// src/frontend/src/pages/admin/EditPet.js
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { API_BASE } from '../../utils/api'
@@ -8,14 +9,35 @@ export default function EditPet() {
   const [formData, setFormData] = useState(null)
   const [error, setError]     = useState(null)
 
-  // 1) buscar dados atuais do pet
+  // Fetch pet details and map to flat formData
   useEffect(() => {
     fetch(`${API_BASE}/api/animals/${id}`)
       .then(res => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         return res.json()
       })
-      .then(data => setFormData(data))
+      .then(data => {
+        setFormData({
+          // flat fields matching DB columns
+          url: data.photos?.[0]?.medium || data.photoUrl || null,
+          type: data.type,
+          name: data.name,
+          description: data.description,
+          age: data.age,
+          gender: data.gender,
+          size: data.size,
+          primary_color: data.colors.primary,
+          secondary_color: data.colors.secondary,
+          tertiary_color: data.colors.tertiary,
+          breed: data.breeds.breed,
+          spayed_neutered: data.attributes.spayed_neutered,
+          shots_current: data.attributes.shots_current,
+          children: data.environment.children,
+          dogs: data.environment.dogs,
+          cats: data.environment.cats,
+          status: data.status
+        })
+      })
       .catch(err => setError(err.message))
   }, [id])
 
@@ -36,8 +58,8 @@ export default function EditPet() {
         body: JSON.stringify(formData)
       })
       if (!res.ok) {
-        const t = await res.text()
-        throw new Error(t || `Erro ${res.status}`)
+        const errText = await res.text()
+        throw new Error(errText || `Erro ${res.status}`)
       }
       navigate('/admin', { replace: true })
     } catch (err) {
@@ -56,7 +78,7 @@ export default function EditPet() {
           Nome:
           <input
             name="name"
-            value={formData.name || ''}
+            value={formData.name}
             onChange={handleChange}
             required
           />
@@ -65,7 +87,7 @@ export default function EditPet() {
           Descrição:
           <textarea
             name="description"
-            value={formData.description || ''}
+            value={formData.description}
             onChange={handleChange}
           />
         </label>
@@ -73,13 +95,17 @@ export default function EditPet() {
           Idade:
           <input
             name="age"
-            value={formData.age || ''}
+            value={formData.age}
             onChange={handleChange}
           />
         </label>
-        {/* … outros campos que quiser editar … */}
+        {/* adicione demais campos conforme precisar */}
         <button type="submit">Salvar Alterações</button>
-        <button type="button" onClick={() => navigate('/admin')} className="btn-cancel">
+        <button
+          type="button"
+          onClick={() => navigate('/admin')}
+          className="btn-cancel"
+        >
           Cancelar
         </button>
       </form>
