@@ -8,6 +8,7 @@ import AdoptionGuide from './pages/adoptionGuide'
 import AboutPage from './pages/about'
 import ContactPage from './pages/contact'
 import AdminPage from './pages/admin'
+import AddPet from './pages/admin/AddPet'
 
 import {
   RouterProvider,
@@ -31,8 +32,10 @@ const appRouter = createBrowserRouter(
       <Route path='contact' element={<ContactPage />} />
 
       {/* Admin (CRUD sem autenticação) */}
-      <Route index element={<AdminPage />} />
-      <Route path="add-pet" element={<AddPet />} />
+      <Route path='admin'>
+        <Route index element={<AdminPage />} />
+        <Route path='add-pet' element={<AddPet />} />
+      </Route>
     </Route>
   )
 )
