@@ -37,4 +37,18 @@ async function getRequestsByPet(petId) {
   return rows
 }
 
+/**
+ * Remove uma solicitação de adoção pelo seu ID
+ * @param {number} requestId
+ * @returns {boolean} true se excluiu, false se não encontrou
+ */
+async function removeRequest(requestId) {
+  const { rowCount } = await pool.query(
+    `DELETE FROM adoption_requests
+       WHERE id = $1`,
+    [requestId]
+  )
+  return rowCount > 0
+}
+
 module.exports = { createRequest, getRequestsByPet }

@@ -5,6 +5,7 @@ const {
   createRequest,
   getRequestsByPet
 } = require('../lib/adoptionRequests')
+const { createRequest, getRequestsByPet, removeRequest } = require('../lib/adoptionRequests')
 
 // POST /api/adoptions
 router.post('/', async (req, res) => {
@@ -25,6 +26,20 @@ router.get('/:petId', async (req, res) => {
   } catch (err) {
     console.error(err)
     return res.status(500).json({ error: 'Erro ao listar solicitações' })
+  }
+})
+
+// DELETE /api/adoptions/:requestId
+router.delete('/:requestId', async (req, res) => {
+  try {
+    const ok = await removeRequest(req.params.requestId)
+    if (!ok) {
+      return res.status(404).json({ error: 'Solicitação não encontrada' })
+    }
+    return res.status(204).send()
+  } catch (err) {
+    console.error(err)
+    return res.status(500).json({ error: 'Erro ao excluir solicitação' })
   }
 })
 

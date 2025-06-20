@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { API_BASE } from '../../utils/api'
 import { getAdoptionRequests } from '../../api/adoptionRequests'
 
-const AdminPage = () => {
+export default function AdminPage() {
   const [pets, setPets]             = useState([])
   const [searchTerm, setSearchTerm] = useState('')
   const [isLoading, setIsLoading]   = useState(true)
@@ -13,20 +13,13 @@ const AdminPage = () => {
   const [requestsByPet, setRequestsByPet] = useState({})
   const navigate                    = useNavigate()
 
+  // Carrega lista de pets
   useEffect(() => {
-    const fetchPets = async () => {
+    async function fetchPets() {
       setIsLoading(true)
       setError(null)
       try {
-        const token = localStorage.getItem('token')
-        const res = await fetch(
-          `${API_BASE}/api/admin/animals`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        )
-        if (res.status === 401) {
-          localStorage.removeItem('token')
-          return navigate('/admin/login', { replace: true })
-        }
+        const res = await fetch(`${API_BASE}/api/admin/animals`)
         if (!res.ok) throw new Error(`Erro ${res.status}: ${res.statusText}`)
         const data = await res.json()
         setPets(data)
@@ -37,156 +30,165 @@ const AdminPage = () => {
       }
     }
     fetchPets()
-  }, [navigate])
+  }, [])
 
-  // Carrega solicitações para cada pet quando abrir
+  // Carrega solicitações ao abrir cada pet
   useEffect(() => {
     if (openPetId !== null) {
       getAdoptionRequests(openPetId)
-        .then(resp => setRequestsByPet(prev => ({ ...prev, [openPetId]: resp.requests })))
-        .catch(err => console.error(err))
+        .then(resp => {
+          setRequestsByPet(prev => ({
+            ...prev,
+            [openPetId]: resp.requests
+          }))
+        })
+        .catch(console.error)
     }
   }, [openPetId])
 
-  const handleDelete = async (id) => {
+  // Exclui um pet
+  const handleDeletePet = async (id) => {
     if (!window.confirm('Tem certeza que deseja remover este animal?')) return
     try {
-      const token = localStorage.getItem('token')
-      const res = await fetch(
-        `${API_BASE}/api/admin/animals/${id}`,
-        { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } }
-      )
+      const res = await fetch(`${API_BASE}/api/admin/animals/${id}`, {
+        method: 'DELETE'
+      })
       if (res.status === 204) {
-        setPets(prev => prev.filter(pet => pet.id !== id))
-        alert('Animal removido com sucesso!')
-      } else if (res.status === 401) {
-        localStorage.removeItem('token')
-        navigate('/admin/login', { replace: true })
+        setPets(prev => prev.filter(p => p.id !== id))
       } else {
-        const errMsg = await res.text()
-        throw new Error(errMsg || res.statusText)
+        const text = await res.text()
+        throw new Error(text || res.statusText)
       }
     } catch (err) {
-      alert(`Falha ao remover animal: ${err.message}`)
+      alert('Falha ao remover animal: ' + err.message)
+    }
+  }
+
+  // Aprova adoção (altera status do pet)
+  const handleApprovePet = async (petId) => {
+    if (!window.confirm('Aprovar adoção deste pet?')) return
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/animals/${petId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'adopted' })
+      })
+      if (!res.ok) throw new Error(`Erro ${res.status}`)
+      // opcional: remover da lista
+      setPets(prev => prev.filter(p => p.id !== petId))
+    } catch (err) {
+      alert('Falha ao aprovar pet: ' + err.message)
+    }
+  }
+
+  // Exclui uma solicitação específica
+  const handleDeleteRequest = async (petId, requestId) => {
+    if (!window.confirm('Excluir esta solicitação?')) return
+    try {
+      const res = await fetch(`${API_BASE}/api/adoptions/${requestId}`, {
+        method: 'DELETE'
+      })
+      if (res.status === 204) {
+        setRequestsByPet(prev => ({
+          ...prev,
+          [petId]: prev[petId].filter(r => r.id !== requestId)
+        }))
+      } else {
+        const text = await res.text()
+        throw new Error(text || res.statusText)
+      }
+    } catch (err) {
+      alert('Falha ao excluir solicitação: ' + err.message)
     }
   }
 
   const filteredPets = pets.filter(pet =>
     pet.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (pet.breed && pet.breed.toLowerCase().includes(searchTerm.toLowerCase())) ||
     pet.type.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  if (isLoading) return (
-    <div className="loading">
-      <div className="spinner"></div>
-      <p>Carregando animais...</p>
-    </div>
-  )
-
-  if (error) return (
-    <div className="error">
-      <p>Erro ao carregar animais: {error}</p>
-      <button onClick={() => window.location.reload()} className="btn-retry">
-        Tentar novamente
-      </button>
-    </div>
-  )
+  if (isLoading) return <p>Carregando animais...</p>
+  if (error)   return <p>Erro ao carregar animais: {error}</p>
 
   return (
     <div className="admin-container">
       <h1>Área do Administrador</h1>
+
       <div className="admin-actions">
         <Link to="/admin/add-pet" className="btn btn-primary">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <path d="M12 4V20M4 12H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
-          Adicionar Animal
+          + Adicionar Animal
         </Link>
-        <div className="search-box">
-          <input
-            type="text"
-            placeholder="Buscar animal..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-          />
-          <button type="button" className="search-button" aria-label="Buscar">
-            🔍
-          </button>
-        </div>
+        <input
+          type="text"
+          placeholder="Buscar animal..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          style={{ marginLeft: '1rem' }}
+        />
       </div>
 
-      <div className="pets-list">
-        {filteredPets.length === 0 ? (
-          <div className="no-results">
-            <p>Nenhum animal encontrado.</p>
-            {searchTerm && (
-              <button onClick={() => setSearchTerm('')} className="btn btn-clear">
-                Limpar busca
-              </button>
-            )}
-          </div>
-        ) : (
-          <table>
-            <thead>
+      <table className="pets-list">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nome</th>
+            <th>Tipo</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredPets.map(pet => (
+            <React.Fragment key={pet.id}>
               <tr>
-                <th>ID</th>
-                <th>Nome</th>
-                <th>Tipo</th>
-                <th>Raça</th>
-                <th>Idade</th>
-                <th>Organização</th>
-                <th>Ações</th>
+                <td>{pet.id}</td>
+                <td>{pet.name}</td>
+                <td>{pet.type}</td>
+                <td>
+                  <button onClick={() => handleApprovePet(pet.id)}>
+                    Aprovar
+                  </button>
+                  <button onClick={() => handleDeletePet(pet.id)} style={{ marginLeft: '0.5rem' }}>
+                    🗑️
+                  </button>
+                  <button
+                    onClick={() => setOpenPetId(openPetId === pet.id ? null : pet.id)}
+                    style={{ marginLeft: '0.5rem' }}
+                  >
+                    {openPetId === pet.id ? 'Ocultar Solicitações' : 'Ver Solicitações'}
+                  </button>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {filteredPets.map(pet => (
-                <React.Fragment key={pet.id}>
-                  <tr>
-                    <td>{pet.id}</td>
-                    <td>{pet.name}</td>
-                    <td>{pet.type}</td>
-                    <td>{pet.breed}</td>
-                    <td>{pet.age} {pet.age === 1 ? 'ano' : 'anos'}</td>
-                    <td>{pet.organization_name || '—'}</td>
-                    <td className="actions">
-                      <Link to={`/admin/edit-pet/${pet.id}`} className="btn-icon btn-edit" title="Editar">
-                        ✏️
-                      </Link>
-                      <button onClick={() => handleDelete(pet.id)} className="btn-icon btn-delete" title="Remover">
-                        🗑️
-                      </button>
-                      <button onClick={() => setOpenPetId(openPetId === pet.id ? null : pet.id)} className="btn-icon btn-view" title="Ver Solicitações">
-                        {openPetId === pet.id ? 'Ocultar Solicitações' : 'Ver Solicitações'}
-                      </button>
-                    </td>
-                  </tr>
-                  {openPetId === pet.id && (
-                    <tr>
-                      <td colSpan="7">
-                        {requestsByPet[pet.id]?.length > 0 ? (
-                          <ul>
-                            {requestsByPet[pet.id].map(r => (
-                              <li key={r.id} style={{ marginBottom: '0.5rem' }}>
-                                <strong>{r.name}</strong> ({r.email}) – {new Date(r.created_at).toLocaleString()}
-                                <p>{r.message}</p>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p>Nenhuma solicitação para este animal.</p>
-                        )}
-                      </td>
-                    </tr>
-                  )}
-                </React.Fragment>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+              {openPetId === pet.id && (
+                <tr>
+                  <td colSpan="4">
+                    {requestsByPet[pet.id]?.length > 0 ? (
+                      <ul>
+                        {requestsByPet[pet.id].map(r => (
+                          <li key={r.id} style={{ marginBottom: '1rem' }}>
+                            <div>
+                              <strong>{r.name}</strong> ({r.email}) —{' '}
+                              {new Date(r.created_at).toLocaleString()}
+                            </div>
+                            <p>{r.message}</p>
+                            <button
+                              onClick={() => handleDeleteRequest(pet.id, r.id)}
+                              style={{ color: 'red' }}
+                            >
+                              Excluir Solicitação
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p>Sem solicitações para este animal.</p>
+                    )}
+                  </td>
+                </tr>
+              )}
+            </React.Fragment>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }
-
-export default AdminPage
