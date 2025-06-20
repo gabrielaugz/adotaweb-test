@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getPetDetails } from '../../api/petfinder';
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
+import { sendAdoptionRequest } from '../../api/adoptionRequests'
+import { API_BASE } from '../../utils/api'
 
 const PetDetailsPage = () => {
   //window.scrollTo(0, 0);
@@ -56,22 +58,23 @@ const PetDetailsPage = () => {
     }));
   };
 
-  const handleFormSubmit = (e) => {
-    e.preventDefault();
-    // Aqui você pode adicionar a lógica para enviar o formulário
-    console.log('Dados do formulário:', { petId: id, ...formData });
-    // Simulando envio bem-sucedido
-    alert('Formulário enviado com sucesso! Entraremos em contato em breve.');
-    setShowAdoptionForm(false);
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      address: '',
-      experience: '',
-      message: ''
-    });
-  };
+  const handleFormSubmit = async e => {
+    e.preventDefault()
+
+    // log pra confirmar que entrou aqui
+    console.log('➡️ handleFormSubmit disparou:', { petId: id, ...formData }, 'API_BASE=', API_BASE)
+
+    try {
+      const res = await sendAdoptionRequest({ petId: Number(id), ...formData })
+      console.log('📨 resposta do POST:', res)
+      alert('Formulário enviado com sucesso! Entraremos em contato em breve.')
+      setShowAdoptionForm(false)
+      setFormData({ name:'', email:'', phone:'', address:'', experience:'', message:'' })
+    } catch(err) {
+      console.error('❌ erro no sendAdoptionRequest:', err)
+      alert('Falha ao enviar: ' + err.message)
+    }
+  }
 
   return (
     <div>
