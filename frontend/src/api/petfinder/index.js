@@ -1,6 +1,7 @@
-// src/api/petfinder/index.js
+// src/frontend/src/api/petfinder/index.js
 
-const API = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+// Use apenas a base da URL, sem o "/api" final
+const API = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 async function fetchJSON(url) {
   const res = await fetch(url);
@@ -10,7 +11,7 @@ async function fetchJSON(url) {
 
 export const tipos = ['Cat','Dog'];
 
-// === Substitua aqui pelo novo getPets: ===
+// Busca coleção de animais via query params
 export const getPets = async ({
   type = '',
   city = '',
@@ -21,24 +22,22 @@ export const getPets = async ({
 } = {}) => {
   const params = new URLSearchParams();
 
-  // normaliza "dog" → "Dog", "cat" → "Cat"
   const typeParam = type
     ? type[0].toUpperCase() + type.slice(1).toLowerCase()
     : '';
 
-  // **só aqui** acrescentamos type
   if (typeParam) params.append('type', typeParam);
-  if (city)      params.append('city', city);
-  if (vaccinated)params.append('vaccinated', vaccinated);
-  if (neutered)  params.append('neutered',   neutered);
-  if (breed)     params.append('breed',      breed);
-  if (puppy)     params.append('puppy',      puppy);
+  if (city)       params.append('city', city);
+  if (vaccinated) params.append('vaccinated', vaccinated);
+  if (neutered)   params.append('neutered',   neutered);
+  if (breed)      params.append('breed',      breed);
+  if (puppy)      params.append('puppy',      puppy);
 
-  const { animals } = await fetchJSON(`${API}/animals?${params}`);
+  // Inclui o "/api" aqui
+  const { animals } = await fetchJSON(`${API}/api/animals?${params}`);
   return animals;
 };
-// === Fim do getPets novo ===
 
-// Fetch detailed info for one pet
-export const getPetDetails = id =>
-  fetchJSON(`${API}/animals/${id}`);
+// Detalhe de um pet pelo ID
+export const getPetDetails = async id =>
+  fetchJSON(`${API}/api/animals/${id}`);
