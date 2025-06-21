@@ -1,8 +1,8 @@
+// src/frontend/src/pages/home/index.js
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { getPets } from '../../api/petfinder';
 import Hero from '../../components/hero';
-import { API_BASE } from '../utils/api'
 import './home.css';  // CSS específico para esta página
 
 export default function HomePage() {
@@ -47,13 +47,13 @@ export default function HomePage() {
 
       <h3 className="page-title">Disponíveis para adoção</h3>
 
-      {/* ← Aqui ficam os filtros, logo abaixo do título */}
+      {/* Filtros abaixo do título */}
       <div className="filters-container">
         {[
-          { label: 'Vacinado',   key: 'vaccinated', value: vaccinated },
-          { label: 'Castrado',   key: 'neutered',   value: neutered   },
-          { label: 'Raça definida', key: 'breed', value: breed },
-          { label: 'Filhote',    key: 'puppy',      value: puppy     }
+          { label: 'Vacinado',     key: 'vaccinated', value: vaccinated },
+          { label: 'Castrado',     key: 'neutered',   value: neutered   },
+          { label: 'Raça Definida', key: 'breed',      value: breed      },
+          { label: 'Filhote',      key: 'puppy',      value: puppy     }
         ].map(({ label, key, value }) => (
           <div className="filter-group" key={key}>
             <label htmlFor={key}>{label}:</label>
@@ -71,7 +71,7 @@ export default function HomePage() {
       </div>
 
       {data.length > 0 ? (
-        <div className="grid">
+        <div className="grid" ref={gridRef}>
           {data.map(animal => (
             <Link
               key={animal.id}
@@ -87,7 +87,7 @@ export default function HomePage() {
                   />
                 </div>
                 <h3>{animal.name}</h3>
-                <p><b>Raça:</b> {animal.breed ? 'Raça definida' : 'Vira-Lata'}</p>
+                <p><b>Raça:</b> {animal.breed ? 'Raça definida' : 'Vira-lata'}</p>
                 <p><b>Cor:</b>   {animal.primary_color || 'Desconhecida'}</p>
                 <p><b>Sexo:</b>{' '}
                   {animal.gender === 'Male'   ? 'Macho' :
