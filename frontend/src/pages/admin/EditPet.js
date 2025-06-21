@@ -151,7 +151,7 @@ export default function EditPet() {
         <label>
           Raça:
           <select name="breed" value={formData.breed} onChange={handleChange}>
-            <option value={false}>Sem raça definida</option>
+            <option value={false}>Vira-lata</option>
             <option value={true}>Raça definida</option>
           </select>
         </label>
