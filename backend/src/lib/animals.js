@@ -2,13 +2,20 @@
 const pool = require('./db')
 
 /**
- * Lista todos os animais (sem filtro de ONG)
+ * Lista todos os animais, incluindo dados da ONG
  */
 async function getAll() {
   const { rows } = await pool.query(
-    `SELECT *
-       FROM animals
-      ORDER BY id`
+    `
+      SELECT
+        a.*,
+        org.id   AS organization_id,
+        org.name AS organization_name
+      FROM animals a
+      LEFT JOIN organizations org
+        ON org.id = a.organization_fk
+      ORDER BY a.id
+    `
   )
   return rows
 }
@@ -61,7 +68,9 @@ async function create(data) {
       $12,$13,$14,
       $15,
       NOW(), NOW()
-    ) RETURNING *`
+    )
+    RETURNING *
+  `
 
   const values = [
     organization_fk,
