@@ -2,14 +2,15 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { API_BASE } from '../../utils/api'
+import './EditPet.css'
 
 export default function EditPet() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [formData, setFormData] = useState(null)
-  const [error, setError]     = useState(null)
+  const [error, setError] = useState(null)
 
-  // Fetch pet details and map to flat formData
+  // Busca os dados do pet e mapeia para formData plano
   useEffect(() => {
     fetch(`${API_BASE}/api/animals/${id}`)
       .then(res => {
@@ -18,7 +19,6 @@ export default function EditPet() {
       })
       .then(data => {
         setFormData({
-          // flat fields matching DB columns
           url: data.photos?.[0]?.medium || data.photoUrl || null,
           type: data.type,
           name: data.name,
@@ -32,9 +32,6 @@ export default function EditPet() {
           breed: data.breeds.breed,
           spayed_neutered: data.attributes.spayed_neutered,
           shots_current: data.attributes.shots_current,
-          children: data.environment.children,
-          dogs: data.environment.dogs,
-          cats: data.environment.cats,
           status: data.status
         })
       })
@@ -58,7 +55,7 @@ export default function EditPet() {
         body: JSON.stringify(formData)
       })
       if (!res.ok) {
-        const errText = await res.text()
+        const errText = await res.text().catch(() => null)
         throw new Error(errText || `Erro ${res.status}`)
       }
       navigate('/admin', { replace: true })
@@ -83,6 +80,7 @@ export default function EditPet() {
             required
           />
         </label>
+
         <label>
           Descrição:
           <textarea
@@ -91,23 +89,99 @@ export default function EditPet() {
             onChange={handleChange}
           />
         </label>
+
         <label>
           Idade:
+          <select name="age" value={formData.age} onChange={handleChange} required>
+            <option value="baby">Filhote</option>
+            <option value="young">Jovem</option>
+            <option value="adult">Adulto</option>
+            <option value="senior">Idoso</option>
+          </select>
+        </label>
+
+        <label>
+          Sexo:
+          <select name="gender" value={formData.gender} onChange={handleChange} required>
+            <option value="Male">Macho</option>
+            <option value="Female">Fêmea</option>
+          </select>
+        </label>
+
+        <label>
+          Tamanho:
+          <select name="size" value={formData.size} onChange={handleChange} required>
+            <option value="small">Pequeno</option>
+            <option value="medium">Médio</option>
+            <option value="large">Grande</option>
+          </select>
+        </label>
+
+        <label>
+          Cor Primária:
           <input
-            name="age"
-            value={formData.age}
+            type="text"
+            name="primary_color"
+            value={formData.primary_color}
+            onChange={handleChange}
+            required
+          />
+        </label>
+
+        <label>
+          Cor Secundária:
+          <input
+            type="text"
+            name="secondary_color"
+            value={formData.secondary_color}
             onChange={handleChange}
           />
         </label>
-        {/* adicione demais campos conforme precisar */}
-        <button type="submit">Salvar Alterações</button>
-        <button
-          type="button"
-          onClick={() => navigate('/admin')}
-          className="btn-cancel"
-        >
-          Cancelar
-        </button>
+
+        <label>
+          Cor Terciária:
+          <input
+            type="text"
+            name="tertiary_color"
+            value={formData.tertiary_color}
+            onChange={handleChange}
+          />
+        </label>
+
+        <label>
+          Raça:
+          <select name="breed" value={formData.breed} onChange={handleChange}>
+            <option value={false}>Sem raça definida</option>
+            <option value={true}>Raça definida</option>
+          </select>
+        </label>
+
+        <label>
+          Castrado:
+          <select name="spayed_neutered" value={formData.spayed_neutered} onChange={handleChange}>
+            <option value={false}>Não</option>
+            <option value={true}>Sim</option>
+          </select>
+        </label>
+
+        <label>
+          Vacinado:
+          <select name="shots_current" value={formData.shots_current} onChange={handleChange}>
+            <option value={false}>Não</option>
+            <option value={true}>Sim</option>
+          </select>
+        </label>
+
+        <div className="btn-actions">
+          <button type="submit">Salvar Alterações</button>
+          <button
+            type="button"
+            onClick={() => navigate('/admin')}
+            className="btn-cancel"
+          >
+            Cancelar
+          </button>
+        </div>
       </form>
     </div>
   )
