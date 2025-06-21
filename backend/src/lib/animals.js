@@ -2,25 +2,23 @@
 const pool = require('./db')
 
 /**
- * Lista todos os animais de uma ONG específica
- * @param {string|number} orgId
+ * Lista todos os animais (sem filtro de ONG)
  */
-async function getAll(orgId) {
+async function getAll() {
   const { rows } = await pool.query(
     `SELECT *
        FROM animals
-      WHERE organization_fk = $1
-      ORDER BY id`,
-    [orgId]
+      ORDER BY id`
   )
   return rows
 }
 
 /**
- * Cria um novo animal para a ONG
+ * Cria um novo animal
  */
-async function create(orgId, data) {
+async function create(data) {
   const {
+    organization_fk,
     url = null,
     type,
     name = null,
@@ -57,16 +55,16 @@ async function create(orgId, data) {
       status_changed_at,
       published_at
     ) VALUES (
-      $1, $2, $3, $4, $5,
-      $6, $7, $8,
-      $9, $10, $11,
-      $12, $13, $14,
+      $1,$2,$3,$4,$5,
+      $6,$7,$8,
+      $9,$10,$11,
+      $12,$13,$14,
       $15,
       NOW(), NOW()
     ) RETURNING *`
 
   const values = [
-    orgId,
+    organization_fk,
     url,
     type,
     name,
@@ -88,21 +86,20 @@ async function create(orgId, data) {
 }
 
 /**
- * Atualiza campos de um animal que pertença à ONG
+ * Atualiza um animal pelo ID
  */
-async function update(id, orgId, data) {
+async function update(id, data) {
   const fields = Object.keys(data)
   if (fields.length === 0) return null
 
-  const assignments = fields.map((f, i) => `"${f}"=$${i+3}`)
+  const assignments = fields.map((f, i) => `"${f}"=$${i+2}`)
   const values = fields.map(f => data[f])
-  values.unshift(orgId)
   values.unshift(id)
 
   const sql = `
     UPDATE animals
        SET ${assignments.join(',')}, status_changed_at = NOW()
-     WHERE id = $1 AND organization_fk = $2
+     WHERE id = $1
      RETURNING *
   `
 
@@ -111,13 +108,12 @@ async function update(id, orgId, data) {
 }
 
 /**
- * Exclui um animal da ONG (hard delete)
+ * Exclui um animal pelo ID
  */
-async function remove(id, orgId) {
+async function remove(id) {
   const { rowCount } = await pool.query(
-    `DELETE FROM animals
-     WHERE id = $1 AND organization_fk = $2`,
-    [id, orgId]
+    `DELETE FROM animals WHERE id = $1`,
+    [id]
   )
   return rowCount > 0
 }
