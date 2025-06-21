@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { getPets } from '../../api/petfinder';
 import Hero from '../../components/hero';
+import { API_BASE } from '../utils/api'
 import './home.css';  // CSS específico para esta página
 
 export default function HomePage() {
@@ -86,7 +87,7 @@ export default function HomePage() {
                   />
                 </div>
                 <h3>{animal.name}</h3>
-                <p><b>Raça:</b> {animal.breed ? 'Vira-lata' : 'Raça não definida'}</p>
+                <p><b>Raça:</b> {animal.breed ? 'Raça definida' : 'Vira-Lata'}</p>
                 <p><b>Cor:</b>   {animal.primary_color || 'Desconhecida'}</p>
                 <p><b>Sexo:</b>{' '}
                   {animal.gender === 'Male'   ? 'Macho' :
