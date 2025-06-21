@@ -6,7 +6,11 @@ import './AddPet.css'
 
 export default function AddPet() {
   const navigate = useNavigate()
+
+  // lista de ONGs para o select
+  const [orgs, setOrgs] = useState([])
   const [formData, setFormData] = useState({
+    organization_fk: '',
     url: '',
     type: 'Dog',
     name: '',
@@ -19,12 +23,21 @@ export default function AddPet() {
     tertiary_color: '',
     breed: false,            // true = "Raça definida", false = "Sem raça definida"
     spayed_neutered: false,  // true = sim, false = não
-    shots_current: false     // true = sim, false = não
+    shots_current: false,    // true = sim, false = não
+    status: 'adoptable'
   })
   const [error, setError] = useState(null)
 
+  // carrega ONGs ao montar componente
+  useEffect(() => {
+    fetch(`${API_BASE}/api/organizations`)
+      .then(res => res.json())
+      .then(data => setOrgs(data.organizations || []))
+      .catch(err => console.error('Falha ao carregar ONGs:', err))
+  }, [])
+
   function handleChange(e) {
-    const { name, value, type, checked } = e.target
+    const { name, type, value, checked } = e.target
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
@@ -33,6 +46,10 @@ export default function AddPet() {
 
   async function handleSubmit(e) {
     e.preventDefault()
+    if (!formData.organization_fk) {
+      setError('Selecione uma ONG.')
+      return
+    }
     setError(null)
     try {
       const res = await fetch(`${API_BASE}/api/admin/animals`, {
@@ -53,10 +70,28 @@ export default function AddPet() {
   return (
     <div className="add-pet-container">
       <h1>Adicionar Novo Pet</h1>
-      {error && <p className="error">Erro: {error}</p>}
+      {error && <p className="error">{error}</p>}
       <form onSubmit={handleSubmit} className="add-pet-form">
+        {/* Select de ONG */}
         <label>
-          Tipo:
+          Organização*:
+          <select
+            name="organization_fk"
+            value={formData.organization_fk}
+            onChange={handleChange}
+            required
+          >
+            <option value="">Selecione...</option>
+            {orgs.map(org => (
+              <option key={org.id} value={org.id}>
+                {org.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Tipo*:
           <select name="type" value={formData.type} onChange={handleChange} required>
             <option>Dog</option>
             <option>Cat</option>
@@ -64,7 +99,7 @@ export default function AddPet() {
         </label>
 
         <label>
-          Nome:
+          Nome*:
           <input name="name" value={formData.name} onChange={handleChange} required />
         </label>
 
@@ -74,7 +109,7 @@ export default function AddPet() {
         </label>
 
         <label>
-          Idade:
+          Idade*:
           <select name="age" value={formData.age} onChange={handleChange} required>
             <option value="baby">Filhote</option>
             <option value="young">Jovem</option>
@@ -84,7 +119,7 @@ export default function AddPet() {
         </label>
 
         <label>
-          Sexo:
+          Sexo*:
           <select name="gender" value={formData.gender} onChange={handleChange} required>
             <option value="Male">Macho</option>
             <option value="Female">Fêmea</option>
@@ -92,7 +127,7 @@ export default function AddPet() {
         </label>
 
         <label>
-          Tamanho:
+          Tamanho*:
           <select name="size" value={formData.size} onChange={handleChange} required>
             <option value="small">Pequeno</option>
             <option value="medium">Médio</option>
@@ -101,13 +136,14 @@ export default function AddPet() {
         </label>
 
         <label>
-          Cor Primária:
+          Cor Primária*:
           <input
             type="text"
             name="primary_color"
             value={formData.primary_color}
             onChange={handleChange}
             placeholder="Ex: Marrom"
+            required
           />
         </label>
 
@@ -157,10 +193,16 @@ export default function AddPet() {
           </select>
         </label>
 
-        <button type="submit">Salvar</button>
-        <button type="button" onClick={() => navigate('/admin')} className="btn-cancel">
-          Cancelar
-        </button>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <button type="submit">Salvar</button>
+          <button
+            type="button"
+            onClick={() => navigate('/admin')}
+            className="btn-cancel"
+          >
+            Cancelar
+          </button>
+        </div>
       </form>
     </div>
   )
