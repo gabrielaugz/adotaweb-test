@@ -1,4 +1,4 @@
-// src/frontend/src/pages/admin/index.js
+// frontend/src/pages/admin/index.js
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { API_BASE } from '../../utils/api'
@@ -32,32 +32,39 @@ export default function AdminPage() {
     loadPets()
   }, [])
 
+  // Função para recarregar solicitações de um pet
+  const reloadRequestsForPet = async (petId) => {
+    try {
+      const resp = await getAdoptionRequests(petId);
+      // Garante que só existam os 3 status válidos
+      const validatedRequests = resp.requests.map(req => ({
+        ...req,
+        status: ['approved', 'denied', 'pending'].includes(req.status) 
+          ? req.status 
+          : 'pending'
+      }));
+      
+      setRequestsByPet(prev => ({
+        ...prev,
+        [petId]: validatedRequests
+      }));
+      
+      // Marcamos como carregado (ou recarregado) para este pet
+      setRequestsLoaded(prev => ({
+        ...prev,
+        [petId]: true
+      }));
+    } catch (err) {
+      console.error("Erro ao recarregar solicitações:", err);
+    }
+  };
+
   // 2) Ao expandir um pet, carrega suas solicitações SE necessário
   useEffect(() => {
     if (openPetId !== null && !requestsLoaded[openPetId]) {
-      getAdoptionRequests(openPetId)
-        .then(resp => {
-          // Garante que só existam os 3 status válidos
-          const validatedRequests = resp.requests.map(req => ({
-            ...req,
-            status: ['approved', 'denied', 'pending'].includes(req.status) 
-              ? req.status 
-              : 'pending'
-          }))
-          
-          setRequestsByPet(prev => ({
-            ...prev,
-            [openPetId]: validatedRequests
-          }))
-          
-          setRequestsLoaded(prev => ({
-            ...prev,
-            [openPetId]: true
-          }))
-        })
-        .catch(console.error)
+      reloadRequestsForPet(openPetId);
     }
-  }, [openPetId, requestsLoaded])
+  }, [openPetId, requestsLoaded]);
 
   // 3) Remove um animal
   async function handleDeletePet(petId) {
@@ -83,7 +90,7 @@ export default function AdminPage() {
     }
   }
 
-  // 4) Aprova uma solicitação
+  // 4) Aprova uma solicitação (MODIFICADO)
   async function handleApproveRequest(petId, requestId) {
     if (!window.confirm('Aprovar esta solicitação?')) return
   
@@ -104,19 +111,15 @@ export default function AdminPage() {
       })
       if (!resPet.ok) throw new Error('Falha ao atualizar status do pet')
 
-      // Atualiza UI
+      // Atualiza o status do pet localmente
       setPets(prevPets => 
         prevPets.map(pet => 
           pet.id === petId ? { ...pet, status: 'unavailable' } : pet
         )
       )
       
-      setRequestsByPet(prev => ({
-        ...prev,
-        [petId]: (prev[petId] || []).map(req => 
-          req.id === requestId ? { ...req, status: 'approved' } : req
-        )
-      }))
+      // Recarrega as solicitações deste pet para refletir a aprovação
+      await reloadRequestsForPet(petId);
 
       alert('Solicitação aprovada com sucesso!')
     } catch (err) {
@@ -124,7 +127,7 @@ export default function AdminPage() {
     }
   }
 
-  // 5) Nega uma solicitação
+  // 5) Nega uma solicitação (MODIFICADO)
   async function handleDenyRequest(petId, requestId) {
     if (!window.confirm('Negar esta solicitação?')) return
     
@@ -136,12 +139,8 @@ export default function AdminPage() {
       })
       if (!res.ok) throw new Error('Falha ao negar solicitação')
       
-      setRequestsByPet(prev => ({
-        ...prev,
-        [petId]: (prev[petId] || []).map(req => 
-          req.id === requestId ? { ...req, status: 'denied' } : req
-        )
-      }))
+      // Recarrega as solicitações deste pet para refletir a negação
+      await reloadRequestsForPet(petId);
     } catch (err) {
       alert(err.message)
     }
