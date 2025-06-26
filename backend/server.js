@@ -1,17 +1,28 @@
 require('dotenv').config()
 const express = require('express')
 const path    = require('path')
+const fs      = require('fs') // Adicionado para manipulação de arquivos
 const pool               = require('./src/lib/db')
 const adminAnimalsRoutes = require('./src/routes/adminAnimals')
-const orgRoutes          = require('./src/routes/organizations');
+const orgRoutes          = require('./src/routes/organizations')
 const adoptionRoutes     = require('./src/routes/adoptionRequests')
 
 const app = express()
+
+// Garante que a pasta uploads exista
+const uploadDir = './uploads'
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true })
+  console.log(`✅ Pasta "${uploadDir}" criada.`)
+} else {
+  console.log(`📁 Pasta "${uploadDir}" já existe.`)
+}
+
 app.use(express.json())
 
 // CORS básico
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin',  '*')
+  res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
   if (req.method === 'OPTIONS') return res.sendStatus(204)
@@ -40,7 +51,7 @@ app.get('/api/animals', async (req, res) => {
       a.gender,
       a.size,
       a.primary_color,
-      COALESCE(p.url, a.url) AS "photoUrl", -- ✅ Substitui url_medium por url
+      COALESCE(p.url, a.url) AS "photoUrl",
       org.email       AS org_email,
       org.phone       AS org_phone,
       org.address1    AS org_address1,
@@ -54,7 +65,7 @@ app.get('/api/animals', async (req, res) => {
       a.breed
     FROM animals a
     LEFT JOIN LATERAL (
-      SELECT url -- ✅ Usa url em vez de url_medium
+      SELECT url
       FROM photos p2
       WHERE p2.animal_id = a.id
         AND p2.is_primary
@@ -100,7 +111,7 @@ app.get('/api/animals', async (req, res) => {
       gender:          r.gender,
       size:            r.size,
       primary_color:   r.primary_color,
-      photoUrl:        r.photoUrl, // ✅ Usa url único
+      photoUrl:        r.photoUrl,
       shots_current:   r.shots_current,
       spayed_neutered: r.spayed_neutered,
       breed:           r.breed,
@@ -158,14 +169,14 @@ app.get('/api/animals/:id', async (req, res) => {
     WHERE a.id = $1
     LIMIT 1
   `
+
   try {
     const { rows } = await pool.query(detailSql, [id])
     const row = rows[0]
     if (!row) return res.status(404).json({ error: 'Pet não encontrado' })
 
-    // ✅ Atualiza a query para usar a nova coluna 'url' da tabela photos
     const photosRes = await pool.query(`
-      SELECT url AS small, url AS medium, url AS large, url AS full -- ✅ Mapeia url para todos os tamanhos
+      SELECT url AS small, url AS medium, url AS large, url AS full
       FROM photos
       WHERE animal_id = $1
       ORDER BY slot
@@ -197,7 +208,7 @@ app.get('/api/animals/:id', async (req, res) => {
       status:             row.status,
       status_changed_at:  row.status_changed_at,
       published_at:       row.published_at,
-      photos:             photosRes.rows, // ✅ Agora usa url único mapeado para todos os tamanhos
+      photos:             photosRes.rows,
       contact: {
         email: row.org_email,
         phone: row.org_phone,
@@ -219,12 +230,10 @@ app.get('/api/animals/:id', async (req, res) => {
   }
 })
 
-// GET /api/organizations
-app.use('/api/organizations', orgRoutes);
-
-console.log('>>> Montando rota ADMIN CRUD em: /api/admin/animals');
+// ─── Montagem de Rotas ────────────────────────────────────────────
+app.use('/api/organizations', orgRoutes)
+console.log('>>> Montando rota ADMIN CRUD em: /api/admin/animals')
 app.use('/api/admin/animals', adminAnimalsRoutes)
-
 app.use('/api/adoptions', adoptionRoutes)
 
 // ─── SERVE REACT EM PRODUÇÃO ─────────────────────────────────
