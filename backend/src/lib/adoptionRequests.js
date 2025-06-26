@@ -28,7 +28,7 @@ async function createRequest(data) {
  */
 async function getRequestsByPet(petId) {
   const { rows } = await pool.query(
-    `SELECT id, name, email, phone, address, experience, message, created_at
+    `SELECT id, name, email, phone, address, experience, message, created_at, status
        FROM adoption_requests
       WHERE pet_id = $1
       ORDER BY created_at DESC`,
