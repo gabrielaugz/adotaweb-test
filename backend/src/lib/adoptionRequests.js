@@ -70,4 +70,15 @@ async function updateRequest(requestId, fields) {
   return rows[0] || null
 }
 
-module.exports = { createRequest, getRequestsByPet, removeRequest, updateRequest }
+async function denyOtherRequests(petId, approvedRequestId) {
+  await pool.query(
+    `UPDATE adoption_requests
+        SET status = 'denied'
+      WHERE pet_id = $1
+        AND id != $2
+        AND status = 'pending'`,
+    [petId, approvedRequestId]
+  )
+}
+
+module.exports = { createRequest, getRequestsByPet, removeRequest, updateRequest, denyOtherRequests }

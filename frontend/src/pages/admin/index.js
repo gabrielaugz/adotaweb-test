@@ -138,12 +138,19 @@ async function handleDenyRequest(petId, requestId) {
     if (!res.ok) throw new Error('Falha ao negar solicitação')
     
     // Update the request status in the local state
-    setRequestsByPet(prev => ({
-      ...prev,
-      [petId]: (prev[petId] || []).map(req => 
-        req.id === requestId ? { ...req, status: 'denied' } : req
-      )
-    }))
+    getAdoptionRequests(petId)
+    .then(resp => {
+      const validatedRequests = resp.requests.map(req => ({
+        ...req,
+        status: ['approved', 'denied', 'pending'].includes(req.status) 
+          ? req.status 
+          : 'pending'
+      }))
+      setRequestsByPet(prev => ({
+        ...prev,
+        [petId]: validatedRequests
+      }))
+    })
   } catch (err) {
     alert(err.message)
   }

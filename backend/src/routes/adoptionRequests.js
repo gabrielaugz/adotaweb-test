@@ -5,7 +5,8 @@ const {
   createRequest,
   getRequestsByPet,
   removeRequest,
-  updateRequest
+  updateRequest,
+  denyOtherRequests
 } = require('../lib/adoptionRequests')
 
 // POST /api/adoptions
@@ -50,6 +51,12 @@ router.put('/:requestId', async (req, res) => {
     if (!updated) {
       return res.status(404).json({ error: 'Solicitação não encontrada' })
     }
+
+    // Se status foi aprovado, negar as demais
+    if (req.body.status === 'approved') {
+      await denyOtherRequests(updated.pet_id, updated.id)
+    }
+
     return res.json(updated)
   } catch (err) {
     console.error(err)
