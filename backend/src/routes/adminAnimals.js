@@ -55,9 +55,12 @@ router.post(
         is_primary: true
       });
 
-      // 4. Retorna o animal atualizado (com url vindo do trigger)
-      const updatedAnimal = await getOneAnimal(novoAnimal.id);
-      return res.status(201).json(updatedAnimal);
+      // 4. Retorna o animal atualizado (com URL do Cloudinary)
+      return res.status(201).json({
+        ...novoAnimal,
+        url: result.secure_url // Usa a URL do Cloudinary diretamente
+      });
+      
     } catch (err) {
       console.error(err);
       return res.status(500).json({ error: 'Erro ao criar animal' });
