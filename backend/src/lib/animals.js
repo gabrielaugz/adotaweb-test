@@ -22,7 +22,8 @@ async function getAll() {
 
 async function getOne(id) {
   try {
-    const { rows } = await db.query('SELECT * FROM animals WHERE id = $1', [id]);
+    // CORREÇÃO: use pool em vez de db
+    const { rows } = await pool.query('SELECT * FROM animals WHERE id = $1', [id]);
     return rows[0] || null;
   } catch (err) {
     console.error('Erro ao buscar animal:', err);
@@ -130,11 +131,20 @@ async function update(id, data) {
  * Exclui um animal pelo ID
  */
 async function remove(id) {
-  const { rowCount } = await pool.query(
-    `DELETE FROM animals WHERE id = $1`,
-    [id]
-  )
-  return rowCount > 0
+  try {
+    // PRIMEIRO: excluir fotos associadas
+    await pool.query('DELETE FROM photos WHERE animal_id = $1', [id]);
+    
+    // DEPOIS: excluir o animal
+    const { rowCount } = await pool.query(
+      `DELETE FROM animals WHERE id = $1`,
+      [id]
+    );
+    return rowCount > 0;
+  } catch (err) {
+    console.error('Erro ao excluir animal:', err);
+    throw err;
+  }
 }
 
 module.exports = { getAll, create, update, remove, getOne }

@@ -144,8 +144,11 @@ router.delete('/:id', async (req, res) => {
     }
     return res.status(204).send();
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'Erro ao excluir animal' });
+    console.error('Erro detalhado:', err);
+    return res.status(500).json({ 
+      error: 'Erro ao excluir animal',
+      details: err.message 
+    });
   }
 });
 
