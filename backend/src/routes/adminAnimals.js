@@ -75,37 +75,58 @@ router.put(
   async (req, res) => {
     const { id } = req.params;
     try {
-      // 1. Atualiza dados do animal (sem imagem)
-      const animalUpdateData = { ...req.body };
-      delete animalUpdateData.image; // Remove campo inválido
-
-      const atualizado = await updateAnimal(id, animalUpdateData);
-      if (!atualizado) {
+      // 1. Verifica se o animal existe
+      const animal = await getOneAnimal(id);
+      if (!animal) {
         return res.status(404).json({ error: 'Animal não encontrado' });
       }
 
-      // 2. Se houver imagem, atualiza a foto principal
+      // 2. Atualiza dados básicos do animal
+      const animalUpdateData = { ...req.body };
+      const atualizado = await updateAnimal(id, animalUpdateData);
+      
+      // 3. Atualiza a imagem se foi enviada
+      let newPhotoUrl = null;
       if (req.file) {
+        // Faz upload da nova imagem
         const result = await cloudinary.uploader.upload(req.file.path);
-        const photoData = {
-          url: result.secure_url,
-          is_primary: true
-        };
+        newPhotoUrl = result.secure_url;
 
-        // Verifica se já existe uma foto para o animal
+        // Busca fotos existentes
         const existingPhotos = await getPhotosByAnimalId(id);
+        
         if (existingPhotos.length > 0) {
-          // Atualiza foto existente
-          await updatePhoto(existingPhotos[0].id, photoData);
+          // Atualiza a foto principal existente
+          await updatePhoto(existingPhotos[0].id, {
+            url: newPhotoUrl,
+            is_primary: true
+          });
         } else {
-          // Cria nova foto
-          await createPhoto({ ...photoData, animal_id: id });
+          // Cria nova foto principal
+          await createPhoto({
+            url: newPhotoUrl,
+            animal_id: id,
+            is_primary: true
+          });
         }
       }
 
-      // 3. Retorna animal atualizado (com url vindo do trigger)
-      const updatedAnimal = await getOneAnimal(id);
-      return res.json(updatedAnimal);
+      // 4. Retorna resposta com dados atualizados
+      const updatedData = { ...animalUpdateData };
+      
+      // Se temos nova URL de foto, adiciona na resposta
+      if (newPhotoUrl) {
+        updatedData.url = newPhotoUrl;
+      } else {
+        // Mantém a URL existente se não houve alteração
+        updatedData.url = animal.url;
+      }
+      
+      return res.json({
+        ...updatedData,
+        id: animal.id
+      });
+      
     } catch (err) {
       console.error(err);
       return res.status(500).json({ error: 'Erro ao atualizar animal' });
