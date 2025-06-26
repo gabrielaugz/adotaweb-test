@@ -13,21 +13,25 @@ async function createPhoto({ url, animal_id, is_primary = true }) {
 }
 
 // Atualiza uma foto existente
-async function updatePhoto(id, { url, is_primary }) {
-  const fields = Object.keys({ url, is_primary });
-  const assignments = fields.map((f, i) => `"${f}"=$${i+2}`);
-  const values = [...Object.values({ url, is_primary }), id];
-
-  const sql = `
-    UPDATE photos
-       SET ${assignments.join(',')}, is_primary = $2
-     WHERE id = $1
-     RETURNING *
-  `;
-
-  const { rows } = await pool.query(sql, values);
-  return rows[0] || null;
-}
+async function updatePhoto(id, data) {
+    const fields = Object.keys(data);
+    if (fields.length === 0) return null;
+  
+    // Corrigindo a construção dos placeholders
+    const assignments = fields.map((f, i) => `${f} = $${i + 1}`);
+    const values = fields.map(f => data[f]);
+    values.push(id); // ID fica no final
+  
+    const sql = `
+      UPDATE photos
+         SET ${assignments.join(', ')}
+       WHERE id = $${values.length}
+       RETURNING *
+    `;
+  
+    const { rows } = await pool.query(sql, values);
+    return rows[0] || null;
+  }
 
 // Busca fotos de um animal
 async function getPhotosByAnimalId(animal_id) {
