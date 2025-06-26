@@ -10,7 +10,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [openPetId, setOpenPetId] = useState(null)
-  const [requestsVersion, setRequestsVersion] = useState({}) // Controle de versão por pet
+  const [requestsLoading, setRequestsLoading] = useState({})
   const navigate = useNavigate()
 
   // 1) Carrega lista de pets
@@ -31,6 +31,20 @@ export default function AdminPage() {
     loadPets()
   }, [])
 
+  // 2) Ao expandir um pet, carrega suas solicitações
+  const loadRequests = async (petId) => {
+    try {
+      setRequestsLoading(prev => ({ ...prev, [petId]: true }))
+      const resp = await getAdoptionRequests(petId)
+      return resp.requests
+    } catch (error) {
+      console.error('Erro ao carregar solicitações:', error)
+      return []
+    } finally {
+      setRequestsLoading(prev => ({ ...prev, [petId]: false }))
+    }
+  }
+
   // 3) Remove um animal
   async function handleDeletePet(petId) {
     if (!window.confirm('Remover este animal?')) return
@@ -45,7 +59,7 @@ export default function AdminPage() {
     }
   }
 
-  // 4) Deferir uma solicitação
+  // 4) Deferir uma solicitação: atualiza status da solicitação e do pet
   async function handleDeferRequest(petId, requestId) {
     if (!window.confirm('Deferir esta solicitação? Todas as outras serão indeferidas automaticamente.')) return
   
@@ -57,23 +71,21 @@ export default function AdminPage() {
         body: JSON.stringify({ status: 'deferido' })
       })
       
-      if (!resReq.ok) throw new Error('Falha ao deferir solicitação')
+      if (!resReq.ok) {
+        throw new Error('Falha ao deferir solicitação')
+      }
   
       // 2. Indeferir todas as outras solicitações do mesmo pet
-      const requestsRes = await fetch(`${API_BASE}/api/adoptions?petId=${petId}`)
-      const requestsData = await requestsRes.json()
+      const requests = await loadRequests(petId)
+      const otherRequests = requests.filter(r => r.id !== requestId)
       
-      const indeferPromises = requestsData.requests
-        .filter(r => r.id !== requestId)
-        .map(request => 
-          fetch(`${API_BASE}/api/adoptions/${request.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: 'indeferido' })
-          })
-        )
-      
-      await Promise.all(indeferPromises)
+      for (const request of otherRequests) {
+        await fetch(`${API_BASE}/api/adoptions/${request.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'indeferido' })
+        })
+      }
   
       // 3. Marcar pet como indisponível
       const resPet = await fetch(`${API_BASE}/api/admin/animals/${petId}`, {
@@ -82,24 +94,26 @@ export default function AdminPage() {
         body: JSON.stringify({ status: 'unavailable' })
       })
       
-      if (!resPet.ok) throw new Error('Falha ao marcar pet como indisponível')
+      if (!resPet.ok) {
+        throw new Error('Falha ao marcar pet como indisponível')
+      }
   
       // 4. Atualizar UI
       setPets(prevPets => 
         prevPets.map(pet => 
-          pet.id === petId ? { ...pet, status: 'unavailable' } : pet
+          pet.id === petId 
+            ? { ...pet, status: 'unavailable' } 
+            : pet
         )
       )
   
-      // 5. Forçar recarregamento das solicitações
-      setRequestsVersion(prev => ({
-        ...prev,
-        [petId]: (prev[petId] || 0) + 1
-      }))
+      // Recarregar solicitações para mostrar estado atualizado
+      setOpenPetId(null) // Fecha e reabre para forçar recarregamento
+      setTimeout(() => setOpenPetId(petId), 100)
   
-      alert('Solicitação deferida!')
+      alert('Solicitação deferida. Todas as outras foram indeferidas automaticamente. O pet foi marcado como indisponível.')
     } catch (err) {
-      alert(err.message || 'Erro ao processar solicitação')
+      alert(err.message || 'Ocorreu um erro ao processar a solicitação')
     }
   }
 
@@ -113,15 +127,15 @@ export default function AdminPage() {
         body: JSON.stringify({ status: 'indeferido' })
       })
       
-      if (!res.ok) throw new Error('Falha ao indeferir solicitação')
+      if (!res.ok) {
+        throw new Error('Falha ao indeferir solicitação')
+      }
       
-      // Forçar recarregamento das solicitações
-      setRequestsVersion(prev => ({
-        ...prev,
-        [petId]: (prev[petId] || 0) + 1
-      }))
+      // Recarregar solicitações para mostrar estado atualizado
+      setOpenPetId(null) // Fecha e reabre para forçar recarregamento
+      setTimeout(() => setOpenPetId(petId), 100)
     } catch (err) {
-      alert(err.message || 'Erro ao indeferir solicitação')
+      alert(err.message || 'Ocorreu um erro ao indeferir a solicitação')
     }
   }
 
@@ -178,10 +192,10 @@ export default function AdminPage() {
 
               {openPetId === pet.id && (
                 <PetRequestsSection 
-                  key={`${pet.id}-${requestsVersion[pet.id] || 0}`} // Chave única para cada versão
                   petId={pet.id}
                   onDefer={handleDeferRequest}
                   onIndefer={handleIndeferRequest}
+                  loading={requestsLoading[pet.id]}
                 />
               )}
             </React.Fragment>
@@ -192,24 +206,14 @@ export default function AdminPage() {
   )
 }
 
-// Componente independente para solicitações
-function PetRequestsSection({ petId, onDefer, onIndefer }) {
+// Componente separado para exibir solicitações
+function PetRequestsSection({ petId, onDefer, onIndefer, loading }) {
   const [requests, setRequests] = useState([])
-  const [loading, setLoading] = useState(true)
 
-  // Busca solicitações sempre que o componente é montado
   useEffect(() => {
     const fetchRequests = async () => {
-      try {
-        setLoading(true)
-        const response = await fetch(`${API_BASE}/api/adoptions?petId=${petId}`)
-        const data = await response.json()
-        setRequests(data.requests || [])
-      } catch (error) {
-        console.error('Erro ao carregar solicitações:', error)
-      } finally {
-        setLoading(false)
-      }
+      const requests = await getAdoptionRequests(petId)
+      setRequests(requests.requests || [])
     }
     
     fetchRequests()
