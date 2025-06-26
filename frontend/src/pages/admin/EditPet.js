@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import axios from 'axios'
+import { API_BASE } from '../../utils/api'
 import './EditPet.css'
 
 export default function EditPet() {
@@ -13,7 +13,7 @@ export default function EditPet() {
 
   // Carrega dados do animal ao montar o componente
   useEffect(() => {
-    fetch(`${process.env.REACT_APP_API_BASE}/api/animals/${id}`)
+    fetch(`${API_BASE}/api/animals/${id}`)
       .then(res => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         return res.json()
@@ -77,15 +77,21 @@ export default function EditPet() {
     }
 
     try {
-      await axios.put(`${process.env.REACT_APP_API_BASE}/api/admin/animals/${id}`, formDataToSend, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+      const res = await fetch(`${API_BASE}/api/admin/animals/${id}`, {
+        method: 'PUT',
+        body: formDataToSend
+        // Não defina headers! O navegador define automaticamente o content-type com boundary
       })
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => null)
+        throw new Error(errText || `Erro ${res.status}`)
+      }
+
       navigate('/admin', { replace: true })
     } catch (err) {
       console.error('Erro ao atualizar:', err)
-      setError(err.response?.data?.error || 'Erro ao atualizar animal')
+      setError(err.message || 'Erro desconhecido')
     }
   }
 
