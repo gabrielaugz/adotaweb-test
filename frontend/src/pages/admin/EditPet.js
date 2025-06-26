@@ -1,18 +1,19 @@
-// src/frontend/src/pages/admin/EditPet.js
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { API_BASE } from '../../utils/api'
+import axios from 'axios'
 import './EditPet.css'
 
 export default function EditPet() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [formData, setFormData] = useState(null)
+  const [imageFile, setImageFile] = useState(null)
+  const [imagePreview, setImagePreview] = useState('')
   const [error, setError] = useState(null)
 
-  // Busca os dados do pet e mapeia para formData plano
+  // Carrega dados do animal ao montar o componente
   useEffect(() => {
-    fetch(`${API_BASE}/api/animals/${id}`)
+    fetch(`${process.env.REACT_APP_API_BASE}/api/animals/${id}`)
       .then(res => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         return res.json()
@@ -34,10 +35,12 @@ export default function EditPet() {
           shots_current: data.attributes.shots_current,
           status: data.status
         })
+        setImagePreview(data.photos?.[0]?.medium || data.photoUrl || '')
       })
       .catch(err => setError(err.message))
   }, [id])
 
+  // Manipula mudanças nos campos do formulário
   function handleChange(e) {
     const { name, type, value, checked } = e.target
     setFormData(prev => ({
@@ -46,31 +49,73 @@ export default function EditPet() {
     }))
   }
 
+  // Manipula seleção de imagem
+  function handleImageChange(e) {
+    const file = e.target.files[0]
+    if (file && file.type !== 'image/png') {
+      alert('Apenas arquivos PNG são permitidos.')
+      return
+    }
+    setImageFile(file)
+    setImagePreview(file ? URL.createObjectURL(file) : '')
+  }
+
+  // Envia o formulário com imagem
   async function handleSubmit(e) {
     e.preventDefault()
+    
+    const formDataToSend = new FormData()
+
+    // Adiciona todos os campos do formulário
+    Object.entries(formData).forEach(([key, value]) => {
+      formDataToSend.append(key, value)
+    })
+
+    // Adiciona a imagem, se houver
+    if (imageFile) {
+      formDataToSend.append('image', imageFile)
+    }
+
     try {
-      const res = await fetch(`${API_BASE}/api/admin/animals/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+      await axios.put(`${process.env.REACT_APP_API_BASE}/api/admin/animals/${id}`, formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       })
-      if (!res.ok) {
-        const errText = await res.text().catch(() => null)
-        throw new Error(errText || `Erro ${res.status}`)
-      }
       navigate('/admin', { replace: true })
     } catch (err) {
-      setError(err.message)
+      console.error('Erro ao atualizar:', err)
+      setError(err.response?.data?.error || 'Erro ao atualizar animal')
     }
   }
 
+  // Renderiza erro ou carregando
   if (error) return <p className="error">Erro: {error}</p>
   if (!formData) return <p>Carregando dados do pet…</p>
 
   return (
     <div className="edit-pet-container">
       <h1>Editar Pet #{id}</h1>
+      
       <form onSubmit={handleSubmit} className="edit-pet-form">
+        {/* Campo de foto */}
+        <label>
+          Foto do Animal:
+          <input
+            type="file"
+            accept="image/png"
+            onChange={handleImageChange}
+          />
+        </label>
+
+        {/* Prévia da imagem */}
+        {imagePreview && (
+          <div className="image-preview">
+            <img src={imagePreview} alt="Prévia do animal" style={{ width: '200px', borderRadius: '8px' }} />
+          </div>
+        )}
+
+        {/* Campos normais */}
         <label>
           Nome:
           <input
@@ -93,10 +138,10 @@ export default function EditPet() {
         <label>
           Idade:
           <select name="age" value={formData.age} onChange={handleChange} required>
-            <option value="baby">Filhote</option>
-            <option value="young">Jovem</option>
-            <option value="adult">Adulto</option>
-            <option value="senior">Idoso</option>
+            <option value="Baby">Filhote</option>
+            <option value="Young">Jovem</option>
+            <option value="Adult">Adulto</option>
+            <option value="Senior">Idoso</option>
           </select>
         </label>
 
@@ -111,9 +156,9 @@ export default function EditPet() {
         <label>
           Tamanho:
           <select name="size" value={formData.size} onChange={handleChange} required>
-            <option value="small">Pequeno</option>
-            <option value="medium">Médio</option>
-            <option value="large">Grande</option>
+            <option value="Small">Pequeno</option>
+            <option value="Medium">Médio</option>
+            <option value="Large">Grande</option>
           </select>
         </label>
 
@@ -172,6 +217,7 @@ export default function EditPet() {
           </select>
         </label>
 
+        {/* Botões de ação */}
         <div className="btn-actions">
           <button type="submit">Salvar Alterações</button>
           <button
