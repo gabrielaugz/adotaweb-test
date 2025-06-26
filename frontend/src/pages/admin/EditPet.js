@@ -125,6 +125,14 @@ export default function EditPet() {
           </div>
         )}
 
+        <label>
+          Status:
+          <select name="status" value={formData.status} onChange={handleChange}>
+            <option value="available">Disponível para adoção</option>
+            <option value="unavailable">Indisponível</option>
+          </select>
+        </label>
+
         {/* Campos normais */}
         <label>
           Nome:
