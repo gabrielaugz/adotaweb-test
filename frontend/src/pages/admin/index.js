@@ -61,7 +61,7 @@ export default function AdminPage() {
   // 4) Aprova uma solicitação: atualiza status da solicitação e do pet
   async function handleApproveRequest(petId, requestId) {
     if (!window.confirm('Aprovar esta solicitação?')) return
-
+  
     // aprovar a própria solicitação
     const resReq = await fetch(`${API_BASE}/api/adoptions/${requestId}`, {
       method: 'PUT',
@@ -72,7 +72,7 @@ export default function AdminPage() {
       alert('Falha ao aprovar solicitação')
       return
     }
-
+  
     // marcar pet como indisponível
     const resPet = await fetch(`${API_BASE}/api/admin/animals/${petId}`, {
       method: 'PUT',
@@ -83,15 +83,27 @@ export default function AdminPage() {
       alert('Falha ao marcar pet como indisponível')
       return
     }
-
-    // atualizar UI
-    setPets(p => p.filter(x => x.id !== petId))
-    setRequestsByPet(prev => {
-      const copy = { ...prev }
-      delete copy[petId]
-      return copy
-    })
-    alert('Solicitação aprovada e pet removido do catálogo')
+  
+    // Atualizar UI - MANTÉM O PET NA LISTA, APENAS ATUALIZA O STATUS
+    setPets(prevPets => 
+      prevPets.map(pet => 
+        pet.id === petId 
+          ? { ...pet, status: 'unavailable' } 
+          : pet
+      )
+    )
+  
+    // Atualizar solicitações para refletir a aprovação
+    setRequestsByPet(prev => ({
+      ...prev,
+      [petId]: (prev[petId] || []).map(req => 
+        req.id === requestId 
+          ? { ...req, status: 'approved' } 
+          : req
+      )
+    }))
+  
+    alert('Solicitação aprovada. O pet foi marcado como indisponível.')
   }
 
   // 5) Nega (denies) uma solicitação sem apagar o registro
@@ -168,27 +180,38 @@ export default function AdminPage() {
                   <td colSpan="4">
                     {requestsByPet[pet.id]?.length > 0 ? (
                       <ul>
-                        {requestsByPet[pet.id].map(r => (
-                          <li key={r.id} style={{ marginBottom:'1rem' }}>
-                            <div>
-                              <strong>{r.name}</strong> ({r.email}) —{' '}
-                              {new Date(r.created_at).toLocaleString()}
-                            </div>
-                            <p>{r.message}</p>
+                    {requestsByPet[pet.id]?.map(r => (
+                      <li key={r.id} style={{ 
+                        marginBottom: '1rem',
+                        borderLeft: r.status === 'approved' ? '4px solid green' : 'none',
+                        paddingLeft: '8px'
+                      }}>
+                        <div>
+                          <strong>{r.name}</strong> ({r.email}) —{' '}
+                          {new Date(r.created_at).toLocaleString()}
+                          {r.status === 'approved' && <span style={{ color: 'green', marginLeft: '8px' }}>✓ APROVADA</span>}
+                        </div>
+                        <p>{r.message}</p>
+                        
+                        {/* Mostrar botões apenas se não estiver aprovada */}
+                        {r.status !== 'approved' && (
+                          <>
                             <button
                               onClick={() => handleApproveRequest(pet.id, r.id)}
-                              style={{ marginRight:'0.5rem' }}
+                              style={{ marginRight: '0.5rem' }}
                             >
                               Aprovar Solicitação
                             </button>
                             <button
                               onClick={() => handleDenyRequest(pet.id, r.id)}
-                              style={{ color:'red' }}
+                              style={{ color: 'red' }}
                             >
                               Negar Solicitação
                             </button>
-                          </li>
-                        ))}
+                          </>
+                        )}
+                      </li>
+                    ))}
                       </ul>
                     ) : (
                       <p>Sem solicitações para este animal.</p>
