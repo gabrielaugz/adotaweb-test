@@ -10,8 +10,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [openPetId, setOpenPetId] = useState(null)
-  const [requestsByPet, setRequestsByPet] = useState({})
-  const [requestsLoaded, setRequestsLoaded] = useState({})
+  const [requestsLoading, setRequestsLoading] = useState({})
   const navigate = useNavigate()
 
   // 1) Carrega lista de pets
@@ -32,24 +31,19 @@ export default function AdminPage() {
     loadPets()
   }, [])
 
-  // 2) Ao expandir um pet, carrega suas solicitações SE necessário
-  useEffect(() => {
-    if (openPetId !== null && !requestsLoaded[openPetId]) {
-      getAdoptionRequests(openPetId)
-        .then(resp => {
-          setRequestsByPet(prev => ({
-            ...prev,
-            [openPetId]: resp.requests
-          }))
-          // Marca como carregado
-          setRequestsLoaded(prev => ({
-            ...prev,
-            [openPetId]: true
-          }))
-        })
-        .catch(console.error)
+  // 2) Ao expandir um pet, carrega suas solicitações
+  const loadRequests = async (petId) => {
+    try {
+      setRequestsLoading(prev => ({ ...prev, [petId]: true }))
+      const resp = await getAdoptionRequests(petId)
+      return resp.requests
+    } catch (error) {
+      console.error('Erro ao carregar solicitações:', error)
+      return []
+    } finally {
+      setRequestsLoading(prev => ({ ...prev, [petId]: false }))
     }
-  }, [openPetId, requestsLoaded])
+  }
 
   // 3) Remove um animal
   async function handleDeletePet(petId) {
@@ -59,16 +53,7 @@ export default function AdminPage() {
     })
     if (res.status === 204) {
       setPets(p => p.filter(x => x.id !== petId))
-      setRequestsByPet(prev => {
-        const copy = { ...prev }
-        delete copy[petId]
-        return copy
-      })
-      setRequestsLoaded(prev => {
-        const copy = { ...prev }
-        delete copy[petId]
-        return copy
-      })
+      if (openPetId === petId) setOpenPetId(null)
     } else {
       alert('Falha ao remover animal')
     }
@@ -91,7 +76,9 @@ export default function AdminPage() {
       }
   
       // 2. Indeferir todas as outras solicitações do mesmo pet
-      const otherRequests = requestsByPet[petId].filter(r => r.id !== requestId);
+      const requests = await loadRequests(petId)
+      const otherRequests = requests.filter(r => r.id !== requestId)
+      
       for (const request of otherRequests) {
         await fetch(`${API_BASE}/api/adoptions/${request.id}`, {
           method: 'PUT',
@@ -120,17 +107,9 @@ export default function AdminPage() {
         )
       )
   
-      // Atualizar solicitações
-      setRequestsByPet(prev => ({
-        ...prev,
-        [petId]: (prev[petId] || []).map(req => {
-          if (req.id === requestId) {
-            return { ...req, status: 'deferido' }
-          } else {
-            return { ...req, status: 'indeferido' }
-          }
-        })
-      }))
+      // Recarregar solicitações para mostrar estado atualizado
+      setOpenPetId(null) // Fecha e reabre para forçar recarregamento
+      setTimeout(() => setOpenPetId(petId), 100)
   
       alert('Solicitação deferida. Todas as outras foram indeferidas automaticamente. O pet foi marcado como indisponível.')
     } catch (err) {
@@ -152,15 +131,9 @@ export default function AdminPage() {
         throw new Error('Falha ao indeferir solicitação')
       }
       
-      // Atualiza localmente
-      setRequestsByPet(prev => ({
-        ...prev,
-        [petId]: (prev[petId] || []).map(req => 
-          req.id === requestId 
-            ? { ...req, status: 'indeferido' } 
-            : req
-        )
-      }))
+      // Recarregar solicitações para mostrar estado atualizado
+      setOpenPetId(null) // Fecha e reabre para forçar recarregamento
+      setTimeout(() => setOpenPetId(petId), 100)
     } catch (err) {
       alert(err.message || 'Ocorreu um erro ao indeferir a solicitação')
     }
@@ -218,64 +191,89 @@ export default function AdminPage() {
               </tr>
 
               {openPetId === pet.id && (
-                <tr>
-                  <td colSpan="5">
-                    {requestsByPet[pet.id]?.length > 0 ? (
-                      <ul>
-                        {requestsByPet[pet.id].map(r => (
-                          <li key={r.id} style={{ 
-                            marginBottom: '1rem',
-                            borderLeft: 
-                              r.status === 'deferido' ? '4px solid green' : 
-                              r.status === 'indeferido' ? '4px solid red' : 
-                              '4px solid yellow',
-                            paddingLeft: '8px'
-                          }}>
-                            <div>
-                              <strong>{r.name}</strong> ({r.email}) —{' '}
-                              {new Date(r.created_at).toLocaleString()}
-                              {r.status === 'deferido' && (
-                                <span style={{ color: 'green', marginLeft: '8px' }}>✓ DEFERIDO</span>
-                              )}
-                              {r.status === 'indeferido' && (
-                                <span style={{ color: 'red', marginLeft: '8px' }}>✗ INDEFERIDO</span>
-                              )}
-                              {!r.status || r.status === 'em_analise' && (
-                                <span style={{ color: 'orange', marginLeft: '8px' }}>⧗ EM ANÁLISE</span>
-                              )}
-                            </div>
-                            <p>{r.message}</p>
-                            
-                            {/* Mostrar botões apenas se estiver em análise */}
-                            {(!r.status || r.status === 'em_analise') && (
-                              <>
-                                <button
-                                  onClick={() => handleDeferRequest(pet.id, r.id)}
-                                  style={{ marginRight: '0.5rem', background: 'green', color: 'white' }}
-                                >
-                                  Deferir
-                                </button>
-                                <button
-                                  onClick={() => handleIndeferRequest(pet.id, r.id)}
-                                  style={{ background: 'red', color: 'white' }}
-                                >
-                                  Indeferir
-                                </button>
-                              </>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p>Sem solicitações para este animal.</p>
-                    )}
-                  </td>
-                </tr>
+                <PetRequestsSection 
+                  petId={pet.id}
+                  onDefer={handleDeferRequest}
+                  onIndefer={handleIndeferRequest}
+                  loading={requestsLoading[pet.id]}
+                />
               )}
             </React.Fragment>
           ))}
         </tbody>
       </table>
     </div>
+  )
+}
+
+// Componente separado para exibir solicitações
+function PetRequestsSection({ petId, onDefer, onIndefer, loading }) {
+  const [requests, setRequests] = useState([])
+
+  useEffect(() => {
+    const fetchRequests = async () => {
+      const requests = await getAdoptionRequests(petId)
+      setRequests(requests.requests || [])
+    }
+    
+    fetchRequests()
+  }, [petId])
+
+  if (loading) return <tr><td colSpan="5"><p>Carregando solicitações...</p></td></tr>
+  
+  return (
+    <tr>
+      <td colSpan="5">
+        {requests.length > 0 ? (
+          <ul>
+            {requests.map(r => (
+              <li key={r.id} style={{ 
+                marginBottom: '1rem',
+                borderLeft: 
+                  r.status === 'deferido' ? '4px solid green' : 
+                  r.status === 'indeferido' ? '4px solid red' : 
+                  '4px solid yellow',
+                paddingLeft: '8px'
+              }}>
+                <div>
+                  <strong>{r.name}</strong> ({r.email}) —{' '}
+                  {new Date(r.created_at).toLocaleString()}
+                  {r.status === 'deferido' && (
+                    <span style={{ color: 'green', marginLeft: '8px' }}>✓ DEFERIDO</span>
+                  )}
+                  {r.status === 'indeferido' && (
+                    <span style={{ color: 'red', marginLeft: '8px' }}>✗ INDEFERIDO</span>
+                  )}
+                  {(!r.status || r.status === 'em_analise') && (
+                    <span style={{ color: 'orange', marginLeft: '8px' }}>⧗ EM ANÁLISE</span>
+                  )}
+                </div>
+                <p>{r.message}</p>
+                
+                {/* Mostrar botões apenas se estiver em análise */}
+                {(!r.status || r.status === 'em_analise') && (
+                  <>
+                    <button
+                      onClick={() => onDefer(petId, r.id)}
+                      style={{ marginRight: '0.5rem', background: 'green', color: 'white' }}
+                    >
+                      Deferir
+                    </button>
+                    <button
+                      onClick={() => onIndefer(petId, r.id)}
+                      style={{ background: 'red', color: 'white' }}
+                    >
+                      Indeferir
+                    </button>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>Sem solicitações para este animal.</p>
+        )}
+      </td>
+    </tr>
   )
 }
