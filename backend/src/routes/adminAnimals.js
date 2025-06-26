@@ -17,7 +17,7 @@ const {
 } = require('../lib/photos');
 
 // Configurações e middlewares
-const cloudinary = require('../config/cloudinary');
+const cloudinary = require('../lib/cloudinary');
 const upload = require('../middleware/upload');
 
 // GET /api/admin/animals
