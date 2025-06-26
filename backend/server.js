@@ -1,4 +1,3 @@
-// server.js
 require('dotenv').config()
 const express = require('express')
 const path    = require('path')
@@ -41,7 +40,7 @@ app.get('/api/animals', async (req, res) => {
       a.gender,
       a.size,
       a.primary_color,
-      COALESCE(p.url_medium, a.url) AS "photoUrl",
+      COALESCE(p.url, a.url) AS "photoUrl", -- ✅ Substitui url_medium por url
       org.email       AS org_email,
       org.phone       AS org_phone,
       org.address1    AS org_address1,
@@ -55,7 +54,7 @@ app.get('/api/animals', async (req, res) => {
       a.breed
     FROM animals a
     LEFT JOIN LATERAL (
-      SELECT url_medium
+      SELECT url -- ✅ Usa url em vez de url_medium
       FROM photos p2
       WHERE p2.animal_id = a.id
         AND p2.is_primary
@@ -101,7 +100,7 @@ app.get('/api/animals', async (req, res) => {
       gender:          r.gender,
       size:            r.size,
       primary_color:   r.primary_color,
-      photoUrl:        r.photoUrl,
+      photoUrl:        r.photoUrl, // ✅ Usa url único
       shots_current:   r.shots_current,
       spayed_neutered: r.spayed_neutered,
       breed:           r.breed,
@@ -164,8 +163,9 @@ app.get('/api/animals/:id', async (req, res) => {
     const row = rows[0]
     if (!row) return res.status(404).json({ error: 'Pet não encontrado' })
 
+    // ✅ Atualiza a query para usar a nova coluna 'url' da tabela photos
     const photosRes = await pool.query(`
-      SELECT url_small AS small, url_medium AS medium, url_large AS large, url_full AS full
+      SELECT url AS small, url AS medium, url AS large, url AS full -- ✅ Mapeia url para todos os tamanhos
       FROM photos
       WHERE animal_id = $1
       ORDER BY slot
@@ -197,7 +197,7 @@ app.get('/api/animals/:id', async (req, res) => {
       status:             row.status,
       status_changed_at:  row.status_changed_at,
       published_at:       row.published_at,
-      photos:             photosRes.rows,
+      photos:             photosRes.rows, // ✅ Agora usa url único mapeado para todos os tamanhos
       contact: {
         email: row.org_email,
         phone: row.org_phone,
