@@ -30,6 +30,5 @@ export function sendAdoptionRequest(data) {
  * @param {number} petId
  */
 export function getAdoptionRequests(petId) {
-  // Endpoint corrigido para área administrativa
-  return fetchJSON(`${API_BASE}/api/admin/adoptions/${petId}`)
+  return fetchJSON(`${API_BASE}/api/adoptions/${petId}`)
 }

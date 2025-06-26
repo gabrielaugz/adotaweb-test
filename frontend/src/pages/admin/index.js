@@ -32,39 +32,32 @@ export default function AdminPage() {
     loadPets()
   }, [])
 
-  // Função para recarregar solicitações de um pet
-  const reloadRequestsForPet = async (petId) => {
-    try {
-      const resp = await getAdoptionRequests(petId);
-      // Garante que só existam os 3 status válidos
-      const validatedRequests = resp.requests.map(req => ({
-        ...req,
-        status: ['approved', 'denied', 'pending'].includes(req.status) 
-          ? req.status 
-          : 'pending'
-      }));
-      
-      setRequestsByPet(prev => ({
-        ...prev,
-        [petId]: validatedRequests
-      }));
-      
-      // Marcamos como carregado (ou recarregado) para este pet
-      setRequestsLoaded(prev => ({
-        ...prev,
-        [petId]: true
-      }));
-    } catch (err) {
-      console.error("Erro ao recarregar solicitações:", err);
-    }
-  };
-
   // 2) Ao expandir um pet, carrega suas solicitações SE necessário
   useEffect(() => {
     if (openPetId !== null && !requestsLoaded[openPetId]) {
-      reloadRequestsForPet(openPetId);
+      getAdoptionRequests(openPetId)
+        .then(resp => {
+          // Garante que só existam os 3 status válidos
+          const validatedRequests = resp.requests.map(req => ({
+            ...req,
+            status: ['approved', 'denied', 'pending'].includes(req.status) 
+              ? req.status 
+              : 'pending'
+          }))
+          
+          setRequestsByPet(prev => ({
+            ...prev,
+            [openPetId]: validatedRequests
+          }))
+          
+          setRequestsLoaded(prev => ({
+            ...prev,
+            [openPetId]: true
+          }))
+        })
+        .catch(console.error)
     }
-  }, [openPetId, requestsLoaded]);
+  }, [openPetId, requestsLoaded])
 
   // 3) Remove um animal
   async function handleDeletePet(petId) {
@@ -90,7 +83,7 @@ export default function AdminPage() {
     }
   }
 
-  // 4) Aprova uma solicitação (MODIFICADO)
+  // 4) Aprova uma solicitação
   async function handleApproveRequest(petId, requestId) {
     if (!window.confirm('Aprovar esta solicitação?')) return
   
@@ -102,7 +95,7 @@ export default function AdminPage() {
         body: JSON.stringify({ status: 'approved' })
       })
       if (!resReq.ok) throw new Error('Falha ao aprovar solicitação')
-
+  
       // Marca pet como indisponível
       const resPet = await fetch(`${API_BASE}/api/admin/animals/${petId}`, {
         method: 'PUT',
@@ -110,41 +103,51 @@ export default function AdminPage() {
         body: JSON.stringify({ status: 'unavailable' })
       })
       if (!resPet.ok) throw new Error('Falha ao atualizar status do pet')
-
-      // Atualiza o status do pet localmente
+  
+      // Atualiza UI
       setPets(prevPets => 
         prevPets.map(pet => 
           pet.id === petId ? { ...pet, status: 'unavailable' } : pet
         )
       )
       
-      // Recarrega as solicitações deste pet para refletir a aprovação
-      await reloadRequestsForPet(petId);
-
+      // Update the request status in the local state
+      setRequestsByPet(prev => ({
+        ...prev,
+        [petId]: (prev[petId] || []).map(req => 
+          req.id === requestId ? { ...req, status: 'approved' } : req
+        )
+      }))
+  
       alert('Solicitação aprovada com sucesso!')
     } catch (err) {
       alert(err.message)
     }
   }
-
-  // 5) Nega uma solicitação (MODIFICADO)
-  async function handleDenyRequest(petId, requestId) {
-    if (!window.confirm('Negar esta solicitação?')) return
+  
+  // 5) Nega uma solicitação
+async function handleDenyRequest(petId, requestId) {
+  if (!window.confirm('Negar esta solicitação?')) return
+  
+  try {
+    const res = await fetch(`${API_BASE}/api/adoptions/${requestId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ status: 'denied' })
+    })
+    if (!res.ok) throw new Error('Falha ao negar solicitação')
     
-    try {
-      const res = await fetch(`${API_BASE}/api/adoptions/${requestId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type':'application/json' },
-        body: JSON.stringify({ status: 'denied' })
-      })
-      if (!res.ok) throw new Error('Falha ao negar solicitação')
-      
-      // Recarrega as solicitações deste pet para refletir a negação
-      await reloadRequestsForPet(petId);
-    } catch (err) {
-      alert(err.message)
-    }
+    // Update the request status in the local state
+    setRequestsByPet(prev => ({
+      ...prev,
+      [petId]: (prev[petId] || []).map(req => 
+        req.id === requestId ? { ...req, status: 'denied' } : req
+      )
+    }))
+  } catch (err) {
+    alert(err.message)
   }
+}
 
   if (loading) return <p>Carregando animais...</p>
   if (error) return <p>Erro: {error}</p>
