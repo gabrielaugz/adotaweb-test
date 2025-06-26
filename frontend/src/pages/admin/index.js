@@ -104,19 +104,25 @@ export default function AdminPage() {
       })
       if (!resPet.ok) throw new Error('Falha ao atualizar status do pet')
   
-      // Atualiza UI
-      setPets(prevPets => 
-        prevPets.map(pet => 
+      // Atualiza status do pet na UI
+      setPets(prevPets =>
+        prevPets.map(pet =>
           pet.id === petId ? { ...pet, status: 'unavailable' } : pet
         )
       )
-      
-      // Update the request status in the local state
+  
+      // Recarrega TODAS as solicitações para esse pet do backend
+      const updatedResp = await getAdoptionRequests(petId)
+      const validatedRequests = updatedResp.requests.map(req => ({
+        ...req,
+        status: ['approved', 'denied', 'pending'].includes(req.status)
+          ? req.status
+          : 'pending'
+      }))
+  
       setRequestsByPet(prev => ({
         ...prev,
-        [petId]: (prev[petId] || []).map(req => 
-          req.id === requestId ? { ...req, status: 'approved' } : req
-        )
+        [petId]: validatedRequests
       }))
   
       alert('Solicitação aprovada com sucesso!')
@@ -124,6 +130,7 @@ export default function AdminPage() {
       alert(err.message)
     }
   }
+  
   
   // 5) Nega uma solicitação
 async function handleDenyRequest(petId, requestId) {
