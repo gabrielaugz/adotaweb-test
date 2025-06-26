@@ -20,6 +20,16 @@ async function getAll() {
   return rows
 }
 
+async function getOne(id) {
+  try {
+    const { rows } = await db.query('SELECT * FROM animals WHERE id = $1', [id]);
+    return rows[0] || null;
+  } catch (err) {
+    console.error('Erro ao buscar animal:', err);
+    throw err;
+  }
+}
+
 /**
  * Cria um novo animal
  */
@@ -127,4 +137,4 @@ async function remove(id) {
   return rowCount > 0
 }
 
-module.exports = { getAll, create, update, remove }
+module.exports = { getAll, create, update, remove, getOne }
