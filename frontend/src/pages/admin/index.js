@@ -200,7 +200,15 @@ async function handleDenyRequest(petId, requestId) {
                 <td>{pet.id}</td>
                 <td>{pet.name}</td>
                 <td>{pet.type}</td>
-                <td>{pet.status}</td>
+                <td>
+                <div><strong>{pet.status === 'available' ? '✅ Disponível' : '🚫 Indisponível'}</strong></div>
+                <small style={{ color: '#666', fontSize: '0.75rem' }}>
+                  Última alteração:<br />
+                  {pet.status_changed_at
+                    ? new Date(pet.status_changed_at).toLocaleString()
+                    : 'N/A'}
+                </small>
+              </td>
                 <td>
                   <Link to={`/admin/edit-pet/${pet.id}`} style={{ marginRight:'0.5rem' }}>
                     ✏️ Editar
