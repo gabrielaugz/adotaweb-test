@@ -5,12 +5,13 @@ import { API_BASE } from '../../utils/api'
 import { getAdoptionRequests } from '../../api/adoptionRequests'
 
 export default function AdminPage() {
-  const [pets, setPets]             = useState([])
+  const [pets, setPets] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
-  const [loading, setLoading]       = useState(true)
-  const [error, setError]           = useState(null)
-  const [openPetId, setOpenPetId]   = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [openPetId, setOpenPetId] = useState(null)
   const [requestsByPet, setRequestsByPet] = useState({})
+  const [requestsLoaded, setRequestsLoaded] = useState({}) // Novo estado
   const navigate = useNavigate()
 
   // 1) Carrega lista de pets
@@ -31,19 +32,24 @@ export default function AdminPage() {
     loadPets()
   }, [])
 
-  // 2) Ao expandir um pet, carrega suas solicitações
+  // 2) Ao expandir um pet, carrega suas solicitações SE necessário
   useEffect(() => {
-    if (openPetId !== null) {
+    if (openPetId !== null && !requestsLoaded[openPetId]) {
       getAdoptionRequests(openPetId)
-        .then(resp =>
+        .then(resp => {
           setRequestsByPet(prev => ({
             ...prev,
             [openPetId]: resp.requests
           }))
-        )
+          // Marca como carregado
+          setRequestsLoaded(prev => ({
+            ...prev,
+            [openPetId]: true
+          }))
+        })
         .catch(console.error)
     }
-  }, [openPetId])
+  }, [openPetId, requestsLoaded])
 
   // 3) Remove um animal
   async function handleDeletePet(petId) {
@@ -53,6 +59,17 @@ export default function AdminPage() {
     })
     if (res.status === 204) {
       setPets(p => p.filter(x => x.id !== petId))
+      // Remove também do estado de solicitações
+      setRequestsByPet(prev => {
+        const copy = { ...prev }
+        delete copy[petId]
+        return copy
+      })
+      setRequestsLoaded(prev => {
+        const copy = { ...prev }
+        delete copy[petId]
+        return copy
+      })
     } else {
       alert('Falha ao remover animal')
     }
@@ -118,9 +135,15 @@ export default function AdminPage() {
       alert('Falha ao negar solicitação')
       return
     }
+    
+    // Atualiza localmente mantendo o registro
     setRequestsByPet(prev => ({
       ...prev,
-      [petId]: prev[petId].filter(r => r.id !== requestId)
+      [petId]: (prev[petId] || []).map(req => 
+        req.id === requestId 
+          ? { ...req, status: 'denied' } 
+          : req
+      )
     }))
   }
 
@@ -177,41 +200,43 @@ export default function AdminPage() {
 
               {openPetId === pet.id && (
                 <tr>
-                  <td colSpan="4">
+                  <td colSpan="5"> {/* Corrigido para colSpan="5" */}
                     {requestsByPet[pet.id]?.length > 0 ? (
                       <ul>
-                    {requestsByPet[pet.id]?.map(r => (
-                      <li key={r.id} style={{ 
-                        marginBottom: '1rem',
-                        borderLeft: r.status === 'approved' ? '4px solid green' : 'none',
-                        paddingLeft: '8px'
-                      }}>
-                        <div>
-                          <strong>{r.name}</strong> ({r.email}) —{' '}
-                          {new Date(r.created_at).toLocaleString()}
-                          {r.status === 'approved' && <span style={{ color: 'green', marginLeft: '8px' }}>✓ APROVADA</span>}
-                        </div>
-                        <p>{r.message}</p>
-                        
-                        {/* Mostrar botões apenas se não estiver aprovada */}
-                        {r.status !== 'approved' && (
-                          <>
-                            <button
-                              onClick={() => handleApproveRequest(pet.id, r.id)}
-                              style={{ marginRight: '0.5rem' }}
-                            >
-                              Aprovar Solicitação
-                            </button>
-                            <button
-                              onClick={() => handleDenyRequest(pet.id, r.id)}
-                              style={{ color: 'red' }}
-                            >
-                              Negar Solicitação
-                            </button>
-                          </>
-                        )}
-                      </li>
-                    ))}
+                        {requestsByPet[pet.id].map(r => (
+                          <li key={r.id} style={{ 
+                            marginBottom: '1rem',
+                            borderLeft: r.status === 'approved' ? '4px solid green' : 
+                                       r.status === 'denied' ? '4px solid red' : 'none',
+                            paddingLeft: '8px'
+                          }}>
+                            <div>
+                              <strong>{r.name}</strong> ({r.email}) —{' '}
+                              {new Date(r.created_at).toLocaleString()}
+                              {r.status === 'approved' && <span style={{ color: 'green', marginLeft: '8px' }}>✓ APROVADA</span>}
+                              {r.status === 'denied' && <span style={{ color: 'red', marginLeft: '8px' }}>✗ NEGADA</span>}
+                            </div>
+                            <p>{r.message}</p>
+                            
+                            {/* Mostrar botões apenas se não estiver resolvida */}
+                            {!r.status && (
+                              <>
+                                <button
+                                  onClick={() => handleApproveRequest(pet.id, r.id)}
+                                  style={{ marginRight: '0.5rem' }}
+                                >
+                                  Aprovar Solicitação
+                                </button>
+                                <button
+                                  onClick={() => handleDenyRequest(pet.id, r.id)}
+                                  style={{ color: 'red' }}
+                                >
+                                  Negar Solicitação
+                                </button>
+                              </>
+                            )}
+                          </li>
+                        ))}
                       </ul>
                     ) : (
                       <p>Sem solicitações para este animal.</p>
