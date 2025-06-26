@@ -46,18 +46,6 @@ router.delete('/:requestId', async (req, res) => {
 
 router.put('/:requestId', async (req, res) => {
   try {
-    // Converte os status do frontend para o formato do banco
-    const statusMap = {
-      'deferido': 'approved',
-      'indeferido': 'denied',
-      'em_analise': 'pending'
-    };
-
-    // Se o campo status foi enviado, converte
-    if (req.body.status) {
-      req.body.status = statusMap[req.body.status] || req.body.status;
-    }
-
     const updated = await updateRequest(req.params.requestId, req.body)
     if (!updated) {
       return res.status(404).json({ error: 'Solicitação não encontrada' })
