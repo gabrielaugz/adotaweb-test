@@ -139,7 +139,7 @@ export default function AdminPage() {
       <table className="pets-list">
         <thead>
           <tr>
-            <th>ID</th><th>Nome</th><th>Tipo</th><th>Ações</th>
+            <th>ID</th><th>Nome</th><th>Tipo</th><th>Status</th><th>Ações</th>
           </tr>
         </thead>
         <tbody>
