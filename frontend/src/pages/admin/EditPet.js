@@ -76,6 +76,10 @@ export default function EditPet() {
       formDataToSend.append('image', imageFile)
     }
 
+    if (formData.url) {
+      formDataToSend.append('url', formData.url);
+    } 
+
     try {
       const res = await fetch(`${API_BASE}/api/admin/animals/${id}`, {
         method: 'PUT',
