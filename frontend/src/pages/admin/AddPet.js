@@ -6,29 +6,28 @@ import './AddPet.css'
 
 export default function AddPet() {
   const navigate = useNavigate()
-
-  // lista de ONGs para o select
   const [orgs, setOrgs] = useState([])
+  const [imageFile, setImageFile] = useState(null)
+  const [imagePreview, setImagePreview] = useState('')
+  const [error, setError] = useState(null)
+  
   const [formData, setFormData] = useState({
     organization_fk: '',
-    url: '',
     type: 'Dog',
     name: '',
     description: '',
-    age: 'baby',             // baby, young, adult, senior
-    gender: 'Male',          // Male, Female
-    size: 'medium',          // small, medium, large
+    age: 'baby',
+    gender: 'Male',
+    size: 'medium',
     primary_color: '',
     secondary_color: '',
     tertiary_color: '',
-    breed: false,            // true = "Raça definida", false = "Sem raça definida"
-    spayed_neutered: false,  // true = sim, false = não
-    shots_current: false,    // true = sim, false = não
+    breed: false,
+    spayed_neutered: false,
+    shots_current: false,
     status: 'adoptable'
   })
-  const [error, setError] = useState(null)
 
-  // carrega ONGs ao montar componente
   useEffect(() => {
     fetch(`${API_BASE}/api/organizations`)
       .then(res => res.json())
@@ -44,23 +43,53 @@ export default function AddPet() {
     }))
   }
 
+  function handleImageChange(e) {
+    const file = e.target.files[0]
+    if (file && file.type !== 'image/png') {
+      alert('Apenas arquivos PNG são permitidos.')
+      return
+    }
+    setImageFile(file)
+    setImagePreview(file ? URL.createObjectURL(file) : '')
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     if (!formData.organization_fk) {
       setError('Selecione uma ONG.')
       return
     }
+    
+    if (!imageFile) {
+      setError('Selecione uma imagem para o pet.')
+      return
+    }
+    
     setError(null)
+    
+    const formDataToSend = new FormData()
+    
+    // Adiciona campos do formulário
+    Object.entries(formData).forEach(([key, value]) => {
+      formDataToSend.append(key, value)
+    })
+    
+    // Adiciona arquivo de imagem
+    if (imageFile) {
+      formDataToSend.append('image', imageFile)
+    }
+
     try {
       const res = await fetch(`${API_BASE}/api/admin/animals`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: formDataToSend
       })
+
       if (!res.ok) {
         const text = await res.text().catch(() => null)
         throw new Error(text || `Erro ${res.status}`)
       }
+
       navigate('/admin')
     } catch (err) {
       setError(err.message)
@@ -71,7 +100,30 @@ export default function AddPet() {
     <div className="add-pet-container">
       <h1>Adicionar Novo Pet</h1>
       {error && <p className="error">{error}</p>}
+      
       <form onSubmit={handleSubmit} className="add-pet-form">
+        {/* Campo de upload de foto */}
+        <label>
+          Foto do Animal* (PNG):
+          <input
+            type="file"
+            accept="image/png"
+            onChange={handleImageChange}
+            required
+          />
+        </label>
+        
+        {/* Pré-visualização da imagem */}
+        {imagePreview && (
+          <div className="image-preview">
+            <img 
+              src={imagePreview} 
+              alt="Pré-visualização" 
+              style={{ width: '200px', borderRadius: '8px' }} 
+            />
+          </div>
+        )}
+
         {/* Select de ONG */}
         <label>
           Organização*:
