@@ -201,7 +201,7 @@ async function handleDenyRequest(petId, requestId) {
                 <td>{pet.name}</td>
                 <td>{pet.type}</td>
                 <td>
-                <div><strong>{pet.status === 'available' ? '✅ Disponível' : '🚫 Indisponível'}</strong></div>
+                <div><strong>{pet.status === 'adoptable' ? '✅ Disponível' : '🚫 Indisponível'}</strong></div>
                 <small style={{ color: '#666', fontSize: '0.75rem' }}>
                   Última alteração:<br />
                   {pet.status_changed_at
