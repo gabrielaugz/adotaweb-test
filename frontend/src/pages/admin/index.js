@@ -149,6 +149,7 @@ export default function AdminPage() {
                 <td>{pet.id}</td>
                 <td>{pet.name}</td>
                 <td>{pet.type}</td>
+                <td>{pet.status}</td>
                 <td>
                   <Link to={`/admin/edit-pet/${pet.id}`} style={{ marginRight:'0.5rem' }}>
                     ✏️
