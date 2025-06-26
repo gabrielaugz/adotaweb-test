@@ -128,7 +128,7 @@ export default function EditPet() {
         <label>
           Status:
           <select name="status" value={formData.status} onChange={handleChange}>
-            <option value="available">Disponível para adoção</option>
+            <option value="adoptable">Disponível para adoção</option>
             <option value="unavailable">Indisponível</option>
           </select>
         </label>
