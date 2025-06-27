@@ -1,10 +1,13 @@
-import React from 'react';
+// src/pages/AdoptionGuide.js
+import React, { useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 
-
 const AdoptionGuide = () => {
-    
-    //window.scrollTo(0, 0);
+  // sempre rola a página para o topo
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   return (
     <div className="guia-adocao-container">
       <div className="guia-adocao-header">
@@ -13,17 +16,66 @@ const AdoptionGuide = () => {
       </div>
 
       <div className="guia-adocao-content">
+        {/* 1. Por que adotar? */}
         <section className="guia-section">
           <h2>1. Por que adotar?</h2>
-          <p>Adotar um pet é um ato de amor que transforma vidas. Você ganha um companheiro leal e ainda ajuda a reduzir o número de animais abandonados.</p>
+          <p>
+            Adotar um pet é um ato de amor que transforma vidas. Você ganha um companheiro leal
+            e ainda ajuda a reduzir o número de animais abandonados.
+          </p>
           <ul>
-            <li>Salva uma vida animal</li>
-            <li>Custos menores que comprar</li>
-            <li>Animais já vacinados e castrados</li>
-            <li>Combate aos criadouros irresponsáveis</li>
+            <li>
+              Salva uma vida animal{' '}
+              <small>
+                (<a
+                  href="https://blog.polipet.com.br/adocao-um-ato-que-salva-vidas/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Blog Polipet
+                </a>)
+              </small>
+            </li>
+            <li>
+              Custos menores que comprar{' '}
+              <small>
+                (<a
+                  href="https://agenciadenoticias.uniceub.br/economia/como-decidir-entre-adotar-ou-comprar-um-animal-confira-custos/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Agência Uniceub
+                </a>)
+              </small>
+            </li>
+            <li>
+              Animais já vacinados e castrados{' '}
+              <small>
+                (<a
+                  href="https://adoteumgatinho.org.br/sobre"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Adote um Gatinho
+                </a>)
+              </small>
+            </li>
+            <li>
+              Combate aos criadouros irresponsáveis{' '}
+              <small>
+                (<a
+                  href="https://gradbrasil.org.br/adocaodeanimais/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  GRAD Brasil
+                </a>)
+              </small>
+            </li>
           </ul>
         </section>
 
+        {/* 2. Processo de Adoção */}
         <section className="guia-section">
           <h2>2. Processo de Adoção</h2>
           <div className="processo-steps">
@@ -50,6 +102,7 @@ const AdoptionGuide = () => {
           </div>
         </section>
 
+        {/* 3. Requisitos para Adoção */}
         <section className="guia-section">
           <h2>3. Requisitos para Adoção</h2>
           <ul>
@@ -61,6 +114,7 @@ const AdoptionGuide = () => {
           </ul>
         </section>
 
+        {/* 4. Cuidados Necessários */}
         <section className="guia-section">
           <h2>4. Cuidados Necessários</h2>
           <div className="cuidados-grid">
@@ -91,6 +145,53 @@ const AdoptionGuide = () => {
           </NavLink>
         </div>
       </div>
+
+      {/* Rodapé de Referências */}
+      <footer className="guia-referencias">
+        <h2>Referências</h2>
+        <ul>
+          <li>
+            “Adoção: um ato que salva vidas” – Blog Polipet. Disponível em:{' '}
+            <a
+              href="https://blog.polipet.com.br/adocao-um-ato-que-salva-vidas/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              blog.polipet.com.br
+            </a>
+          </li>
+          <li>
+            “Como decidir entre adotar ou comprar um animal; confira custos” – Agência Uniceub. Disponível em:{' '}
+            <a
+              href="https://agenciadenoticias.uniceub.br/economia/como-decidir-entre-adotar-ou-comprar-um-animal-confira-custos/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              agenciadenoticias.uniceub.br
+            </a>
+          </li>
+          <li>
+            Sobre vacinação e castração – Adote um Gatinho. Disponível em:{' '}
+            <a
+              href="https://adoteumgatinho.org.br/sobre"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              adoteumgatinho.org.br
+            </a>
+          </li>
+          <li>
+            “Adoção de animais: pets não são presentes” – GRAD Brasil. Disponível em:{' '}
+            <a
+              href="https://gradbrasil.org.br/adocaodeanimais/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              gradbrasil.org.br
+            </a>
+          </li>
+        </ul>
+      </footer>
     </div>
   );
 };
