@@ -1,8 +1,8 @@
 # AdotaWeb
 
 **Site para adoção de pets**  
-Sistema para listar, buscar e adotar animais disponíveis em ONGs parceiras.
-Acessível via: https://adotaweb-test.onrender.com/
+- Sistema para listar, buscar e adotar animais disponíveis em ONGs parceiras.
+- Acessível via: https://adotaweb-test.onrender.com/
 
 ---
 
@@ -51,24 +51,24 @@ Acessível via: https://adotaweb-test.onrender.com/
 1. Clone o repositório  
    ```bash
    git clone https://github.com/gabrielaugz/adotaweb-test
-   cd adotaweb
+   cd adotaweb```
 
 2. Defina as variáveis de ambiente abaixo (arquivo .env na raiz):
-    DATABASE_URL=
-    CLOUDINARY_CLOUD_NAME=
-    CLOUDINARY_API_KEY=
-    CLOUDINARY_API_SECRET=
-    REACT_APP_API_URL=
-    REACT_APP_FORMSPREE_ID=
+    - DATABASE_URL=
+    - CLOUDINARY_CLOUD_NAME=
+    - CLOUDINARY_API_KEY=
+    - CLOUDINARY_API_SECRET=
+    - REACT_APP_API_URL=
+    - REACT_APP_FORMSPREE_ID=
 
 3. Instale e rode
     # Backend
-    cd backend
-    npm install
-    npm run seed # (opcional para povoar o banco inicialmente)
-    npm start     
+    - cd backend
+    - npm install
+    - npm run seed # (opcional para povoar o banco inicialmente)
+    - npm start     
 
     # Frontend
-    cd ../frontend
-    npm install
-    npm start
+    - cd ../frontend
+    - npm install
+    - npm start
