@@ -1465,7 +1465,7 @@ nav {
   }
 }
 
-/* Formulário descrição página admin - Alinhado ---------------------------------------------------------------------------*/
+/* Formulário descrição página admin - Alinhado e nivelado -----------------------------------------*/
 .requests-panel {
   padding: 1rem;
 }
@@ -1480,7 +1480,7 @@ nav {
 .request-card-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start; /* Alinha os elementos pelo topo */
   flex-wrap: nowrap;
   gap: 1rem;
   flex-direction: row;
@@ -1490,6 +1490,7 @@ nav {
   font-size: 0.9rem;
   white-space: nowrap;
   flex: 1;
+  margin-top: 0.2rem;
 }
 
 .request-meta {
@@ -1509,14 +1510,19 @@ nav {
   gap: 0.5rem;
   flex-wrap: wrap;
   justify-content: flex-end;
+  align-items: flex-start; /* Garante alinhamento pelo topo */
+  padding-top: 0.2rem;
 }
 
-.btn-approve, .btn-deny {
+/* Botões de ação */
+.btn-approve,
+.btn-deny {
   padding: 0.4rem 0.8rem;
   border: none;
   border-radius: 4px;
   font-size: 0.85rem;
   white-space: nowrap;
+  line-height: 1;
 }
 
 .btn-approve {
@@ -1539,8 +1545,10 @@ nav {
   .request-actions {
     justify-content: flex-start;
     width: 100%;
+    padding-top: 0;
   }
 }
+
 
 
 /* Estilos específicos para a página AddPet -------------------------------------------------------------------------*/
