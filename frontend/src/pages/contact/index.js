@@ -1,42 +1,16 @@
-import React, { useState } from 'react';
+// src/pages/ContactPage.js
+import React, { useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
+import { useForm, ValidationError } from '@formspree/react';
 
 const ContactPage = () => {
+  // rola a página para o topo quando o componente monta
+  useEffect(() => {
     window.scrollTo(0, 0);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: ''
-  });
+  }, []);
 
-  const [submitStatus, setSubmitStatus] = useState(null);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Simulação de envio
-    console.log('Formulário enviado:', formData);
-    setSubmitStatus('success');
-    setFormData({
-      name: '',
-      email: '',
-      subject: '',
-      message: ''
-    });
-    
-    // Em uma aplicação real, você faria uma chamada API aqui
-    // fetch('/api/contact', { method: 'POST', body: JSON.stringify(formData) })
-    //   .then(response => setSubmitStatus('success'))
-    //   .catch(error => setSubmitStatus('error'));
-  };
+  // inicializa o hook do Formspree com o seu ID de formulário
+  const [state, handleSubmit] = useForm("mldnajyr");
 
   return (
     <div className="contact-container">
@@ -46,6 +20,7 @@ const ContactPage = () => {
       </div>
 
       <div className="contact-content">
+        {/* Seção de informações de contato */}
         <div className="contact-info">
           <h2>Informações de Contato</h2>
           
@@ -61,64 +36,50 @@ const ContactPage = () => {
           
           <div className="contact-method">
             <h3>Endereço</h3>
-            <p>Rua dos Pets, 123 - Vila Animal<br/>São Paulo/SP - CEP 01234-567</p>
+            <p>
+              Rua dos Pets, 123 - Vila Animal<br/>
+              São Paulo/SP - CEP 01234-567
+            </p>
           </div>
           
           <div className="contact-method">
             <h3>Horário de Atendimento</h3>
-            <p>Segunda a Sexta: 9h às 18h<br/>Sábado: 9h às 14h</p>
+            <p>
+              Segunda a Sexta: 9h às 18h<br/>
+              Sábado: 9h às 14h
+            </p>
           </div>
         </div>
 
+        {/* Seção do formulário */}
         <div className="contact-form-container">
           <h2>Envie sua Mensagem</h2>
-          
-          {submitStatus === 'success' && (
+
+          {state.succeeded && (
             <div className="alert success">
               Mensagem enviada com sucesso! Retornaremos em breve.
             </div>
           )}
-          
-          {submitStatus === 'error' && (
-            <div className="alert error">
-              Ocorreu um erro ao enviar sua mensagem. Por favor, tente novamente.
-            </div>
-          )}
-          
+
           <form onSubmit={handleSubmit} className="contact-form">
+            {/* Nome */}
             <div className="form-group">
               <label htmlFor="name">Nome Completo</label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                required
-              />
+              <input id="name" type="text" name="name" required />
+              <ValidationError prefix="Nome" field="name" errors={state.errors} />
             </div>
-            
+
+            {/* Email */}
             <div className="form-group">
               <label htmlFor="email">Email</label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-              />
+              <input id="email" type="email" name="email" required />
+              <ValidationError prefix="Email" field="email" errors={state.errors} />
             </div>
-            
+
+            {/* Assunto */}
             <div className="form-group">
               <label htmlFor="subject">Assunto</label>
-              <select
-                id="subject"
-                name="subject"
-                value={formData.subject}
-                onChange={handleChange}
-                required
-              >
+              <select id="subject" name="subject" required>
                 <option value="">Selecione um assunto</option>
                 <option value="adoption">Adoção de Pets</option>
                 <option value="partnership">Parcerias</option>
@@ -126,22 +87,19 @@ const ContactPage = () => {
                 <option value="support">Suporte Técnico</option>
                 <option value="other">Outros</option>
               </select>
+              <ValidationError prefix="Assunto" field="subject" errors={state.errors} />
             </div>
-            
+
+            {/* Mensagem */}
             <div className="form-group">
               <label htmlFor="message">Mensagem</label>
-              <textarea
-                id="message"
-                name="message"
-                rows="6"
-                value={formData.message}
-                onChange={handleChange}
-                required
-              ></textarea>
+              <textarea id="message" name="message" rows="6" required />
+              <ValidationError prefix="Mensagem" field="message" errors={state.errors} />
             </div>
-            
-            <button type="submit" className="submit-button">
-              Enviar Mensagem
+
+            {/* Botão de envio */}
+            <button type="submit" className="submit-button" disabled={state.submitting}>
+              {state.submitting ? 'Enviando...' : 'Enviar Mensagem'}
             </button>
           </form>
         </div>
