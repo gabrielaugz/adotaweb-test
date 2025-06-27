@@ -1,4 +1,5 @@
-// src/backend/lib/db.js
+// backend\src\lib\db.js
+
 const { Pool } = require('pg');
 
 const pool = new Pool({

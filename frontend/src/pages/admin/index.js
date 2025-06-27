@@ -1,3 +1,5 @@
+// frontend\src\pages\admin\index.js
+
 import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { API_BASE } from '../../utils/api'
@@ -13,6 +15,7 @@ export default function AdminPage() {
   const [requestsLoaded, setRequestsLoaded] = useState({})
   const navigate = useNavigate()
 
+  // carrega a lista de animais ao montar o componente
   useEffect(() => {
     async function loadPets() {
       setLoading(true)
@@ -30,6 +33,7 @@ export default function AdminPage() {
     loadPets()
   }, [])
 
+  // carrega as solicitações de adoção para o animal aberto
   useEffect(() => {
     if (openPetId !== null && !requestsLoaded[openPetId]) {
       getAdoptionRequests(openPetId)
@@ -45,6 +49,7 @@ export default function AdminPage() {
     }
   }, [openPetId, requestsLoaded])
 
+  // manipula a remoção de um animal
   async function handleDeletePet(petId) {
     if (!window.confirm('Remover este animal?')) return
     const res = await fetch(`${API_BASE}/api/admin/animals/${petId}`, { method: 'DELETE' })
@@ -57,6 +62,7 @@ export default function AdminPage() {
     }
   }
 
+  // manipula a aprovação de uma solicitação de adoção
   async function handleApproveRequest(petId, requestId) {
     if (!window.confirm('Aprovar esta solicitação?')) return
     try {
@@ -83,6 +89,7 @@ export default function AdminPage() {
     }
   }
 
+  // manipula a negação de uma solicitação de adoção
   async function handleDenyRequest(petId, requestId) {
     if (!window.confirm('Negar esta solicitação?')) return
     try {
@@ -102,6 +109,7 @@ export default function AdminPage() {
     }
   }
 
+  // filtra os animais com base no termo de busca
   const filteredPets = pets.filter(p =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.type.toLowerCase().includes(searchTerm.toLowerCase())

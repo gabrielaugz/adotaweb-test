@@ -1,9 +1,10 @@
-// src/pages/AdoptionGuide.js
+// frontend\src\pages\adoptionGuide\index.js
+
 import React, { useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 
+// sempre rola a página para o topo
 const AdoptionGuide = () => {
-  // sempre rola a página para o topo
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);

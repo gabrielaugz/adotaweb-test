@@ -1,14 +1,14 @@
+// frontend\src\pages\petDetailsNotFound\index.js
+
 import React from 'react';
-// Importar useNavigate
 import { useNavigate } from 'react-router-dom';
 
 const PetDetailsNotFound = () => {
 
-  // Obter a função navigate do useNavigate
   const navigate = useNavigate();
 
+  // navegar para a página inicial
   const goHome = () => {
-    // Navegar para a página inicial
     navigate('/');
   }
   

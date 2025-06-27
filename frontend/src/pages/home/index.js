@@ -1,10 +1,12 @@
-// src/frontend/src/pages/home/index.js
+// frontend\src\pages\home\index.js
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { getPets } from '../../api/petfinder';
 import Hero from '../../components/hero';
 import './home.css';  // CSS específico para esta página
 
+// função principal da página inicial
 export default function HomePage() {
   useEffect(() => window.scrollTo(0, 0), []);
   const gridRef = useRef(null)
@@ -19,7 +21,7 @@ export default function HomePage() {
   const breed      = searchParams.get('breed')      || '';
   const puppy      = searchParams.get('puppy')      || '';
 
-  // Carrega pets sempre que qualquer filtro mudar
+  // carrega pets sempre que qualquer filtro mudar
   useEffect(() => {
     setData(null);
     getPets({ type, city: cityQuery, vaccinated, neutered, breed, puppy })

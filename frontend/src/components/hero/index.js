@@ -1,3 +1,5 @@
+// frontend\src\components\hero\index.js
+
 import React, { useState, useEffect } from 'react';
 
 const Hero = ({ displayText }) => {
@@ -10,13 +12,14 @@ const Hero = ({ displayText }) => {
   ];
   
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-
+  
+  // função para atualizar o índice da imagem atual a cada 4 segundos
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentImageIndex((prevIndex) => 
         prevIndex === images.length - 1 ? 0 : prevIndex + 1
       );
-    }, 4000); // Muda a cada 4 segundos
+    }, 4000);
 
     return () => clearInterval(interval);
   }, [images.length]);
@@ -29,8 +32,8 @@ const Hero = ({ displayText }) => {
         backgroundBlendMode: 'saturation',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        transition: 'background-image 1s ease-in-out', // Adiciona transição suave
-        height: '400px', // Defina uma altura adequada
+        transition: 'background-image 1s ease-in-out',
+        height: '400px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center'

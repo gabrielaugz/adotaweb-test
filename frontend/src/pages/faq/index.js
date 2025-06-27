@@ -1,9 +1,11 @@
+// frontend\src\pages\faq\index.js
+
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 
+// página de FAQ (Perguntas Frequentes)
 const FaqPage = () => {
     
-    //window.scrollTo(0, 0);
   const faqItems = [
     {
       question: "Quais são os requisitos para adotar um pet?",

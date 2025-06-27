@@ -1,3 +1,5 @@
+// frontend\src\pages\admin\EditPet.js
+
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { API_BASE } from '../../utils/api'
@@ -11,7 +13,7 @@ export default function EditPet() {
   const [imagePreview, setImagePreview] = useState('')
   const [error, setError] = useState(null)
 
-  // Carrega dados do animal ao montar o componente
+  // carrega dados do animal ao montar o componente
   useEffect(() => {
     fetch(`${API_BASE}/api/animals/${id}`)
       .then(res => {
@@ -40,7 +42,7 @@ export default function EditPet() {
       .catch(err => setError(err.message))
   }, [id])
 
-  // Manipula mudanças nos campos do formulário
+  // manipula mudanças nos campos do formulário
   function handleChange(e) {
     const { name, type, value, checked } = e.target
     setFormData(prev => ({
@@ -49,7 +51,7 @@ export default function EditPet() {
     }))
   }
 
-  // Manipula seleção de imagem
+  // manipula seleção de imagem
   function handleImageChange(e) {
     const file = e.target.files[0]
     if (file && file.type !== 'image/png') {
@@ -60,18 +62,18 @@ export default function EditPet() {
     setImagePreview(file ? URL.createObjectURL(file) : '')
   }
 
-  // Envia o formulário com imagem
+  // envia o formulário com imagem
   async function handleSubmit(e) {
     e.preventDefault()
     
     const formDataToSend = new FormData()
 
-    // Adiciona todos os campos do formulário
+    // adiciona todos os campos do formulário
     Object.entries(formData).forEach(([key, value]) => {
       formDataToSend.append(key, value)
     })
 
-    // Adiciona a imagem, se houver
+    // adiciona a imagem, se houver
     if (imageFile) {
       formDataToSend.append('image', imageFile)
     }
@@ -84,7 +86,6 @@ export default function EditPet() {
       const res = await fetch(`${API_BASE}/api/admin/animals/${id}`, {
         method: 'PUT',
         body: formDataToSend
-        // Não defina headers! O navegador define automaticamente o content-type com boundary
       })
 
       if (!res.ok) {
@@ -99,7 +100,7 @@ export default function EditPet() {
     }
   }
 
-  // Renderiza erro ou carregando
+  // renderiza erro ou carregando
   if (error) return <p className="error">Erro: {error}</p>
   if (!formData) return <p>Carregando dados do pet…</p>
 

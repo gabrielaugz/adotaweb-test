@@ -1,155 +1,138 @@
-const express = require('express');
-const router = express.Router();
+// backend\src\routes\adminAnimals.js
 
-// Funções do banco de dados
+// backend/src/routes/adminAnimals.js
+
+const express = require('express')
+const router = express.Router()
+
+// funções de acesso ao bd
 const {
   getAll,
   create: createAnimal,
   update: updateAnimal,
   remove: removeAnimal,
   getOne: getOneAnimal
-} = require('../lib/animals');
-
+} = require('../lib/animals')
 const {
   createPhoto,
   updatePhoto,
   getPhotosByAnimalId
-} = require('../lib/photos');
+} = require('../lib/photos')
 
-// Configurações e middlewares
-const cloudinary = require('../lib/cloudinary');
-const upload = require('../middleware/upload');
+// configurações de upload e cloudinary
+const cloudinary = require('../lib/cloudinary')
+const upload = require('../middleware/upload')
 
-// GET /api/admin/animals
+// lista todos os animais cadastrados
 router.get('/', async (_req, res) => {
   try {
-    const rows = await getAll();
-    return res.json(rows);
+    const rows = await getAll()
+    return res.json(rows)
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'Erro ao listar animais' });
+    console.error(err)
+    return res.status(500).json({ error: 'erro ao listar animais' })
   }
-});
+})
 
-// POST /api/admin/animals
-router.post(
-  '/',
-  upload.single('image'),
-  async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ error: 'Nenhuma imagem foi enviada.' });
-      }
-
-      // 1. Cria o animal sem imagem
-      const animalData = { ...req.body };
-      const novoAnimal = await createAnimal(animalData);
-
-      // 2. Faz upload da imagem para o Cloudinary
-      const result = await cloudinary.uploader.upload(req.file.path);
-
-      // 3. Cria a foto vinculada ao animal
-      await createPhoto({
-        url: result.secure_url,
-        animal_id: novoAnimal.id,
-        is_primary: true
-      });
-
-      // 4. Retorna o animal atualizado (com URL do Cloudinary)
-      return res.status(201).json({
-        ...novoAnimal,
-        url: result.secure_url // Usa a URL do Cloudinary diretamente
-      });
-      
-    } catch (err) {
-      console.error(err);
-      return res.status(500).json({ error: 'Erro ao criar animal' });
-    }
-  }
-);
-
-// PUT /api/admin/animals/:id
-router.put(
-  '/:id',
-  upload.single('image'),
-  async (req, res) => {
-    const { id } = req.params;
-    try {
-      // 1. Verifica se o animal existe
-      const animal = await getOneAnimal(id);
-      if (!animal) {
-        return res.status(404).json({ error: 'Animal não encontrado' });
-      }
-
-      // 2. Atualiza dados básicos do animal
-      const animalUpdateData = { ...req.body };
-      const atualizado = await updateAnimal(id, animalUpdateData);
-      
-      // 3. Atualiza a imagem se foi enviada
-      let newPhotoUrl = null;
-      if (req.file) {
-        // Faz upload da nova imagem
-        const result = await cloudinary.uploader.upload(req.file.path);
-        newPhotoUrl = result.secure_url;
-
-        // Busca fotos existentes
-        const existingPhotos = await getPhotosByAnimalId(id);
-        
-        if (existingPhotos.length > 0) {
-          // Atualiza a foto principal existente
-          await updatePhoto(existingPhotos[0].id, {
-            url: newPhotoUrl,
-            is_primary: true
-          });
-        } else {
-          // Cria nova foto principal
-          await createPhoto({
-            url: newPhotoUrl,
-            animal_id: id,
-            is_primary: true
-          });
-        }
-      }
-
-      // 4. Retorna resposta com dados atualizados
-      const updatedData = { ...animalUpdateData };
-      
-      // Se temos nova URL de foto, adiciona na resposta
-      if (newPhotoUrl) {
-        updatedData.url = newPhotoUrl;
-      } else {
-        // Mantém a URL existente se não houve alteração
-        updatedData.url = animal.url;
-      }
-      
-      return res.json({
-        ...updatedData,
-        id: animal.id
-      });
-      
-    } catch (err) {
-      console.error(err);
-      return res.status(500).json({ error: 'Erro ao atualizar animal' });
-    }
-  }
-);
-
-// DELETE /api/admin/animals/:id
-router.delete('/:id', async (req, res) => {
-  const { id } = req.params;
+// cria um novo animal e faz upload da imagem
+router.post('/', upload.single('image'), async (req, res) => {
   try {
-    const ok = await removeAnimal(id);
-    if (!ok) {
-      return res.status(404).json({ error: 'Animal não encontrado' });
+    if (!req.file) {
+      return res.status(400).json({ error: 'nenhuma imagem foi enviada' })
     }
-    return res.status(204).send();
-  } catch (err) {
-    console.error('Erro detalhado:', err);
-    return res.status(500).json({ 
-      error: 'Erro ao excluir animal',
-      details: err.message 
-    });
-  }
-});
 
-module.exports = router;
+    // cria registro básico do animal
+    const animalData = { ...req.body }
+    const novoAnimal = await createAnimal(animalData)
+
+    // faz upload para cloudinary
+    const result = await cloudinary.uploader.upload(req.file.path)
+
+    // armazena url da foto no bd
+    await createPhoto({
+      url: result.secure_url,
+      animal_id: novoAnimal.id,
+      is_primary: true
+    })
+
+    // retorna animal com url da imagem
+    return res.status(201).json({
+      ...novoAnimal,
+      url: result.secure_url
+    })
+  } catch (err) {
+    console.error(err)
+    return res.status(500).json({ error: 'erro ao criar animal' })
+  }
+})
+
+// atualiza dados do animal e sua foto, se fornecida
+router.put('/:id', upload.single('image'), async (req, res) => {
+  const { id } = req.params
+  try {
+    // verifica existência do animal
+    const animal = await getOneAnimal(id)
+    if (!animal) {
+      return res.status(404).json({ error: 'animal não encontrado' })
+    }
+
+    // atualiza campos textuais
+    const animalUpdateData = { ...req.body }
+    await updateAnimal(id, animalUpdateData)
+
+    let newPhotoUrl = null
+    if (req.file) {
+      // upload da nova imagem
+      const result = await cloudinary.uploader.upload(req.file.path)
+      newPhotoUrl = result.secure_url
+
+      // obtém fotos atuais
+      const existing = await getPhotosByAnimalId(id)
+      if (existing.length > 0) {
+        // atualiza foto principal
+        await updatePhoto(existing[0].id, {
+          url: newPhotoUrl,
+          is_primary: true
+        })
+      } else {
+        // cria nova foto principal
+        await createPhoto({
+          url: newPhotoUrl,
+          animal_id: id,
+          is_primary: true
+        })
+      }
+    }
+
+    // monta resposta com url atualizada ou existente
+    const responseData = {
+      ...animalUpdateData,
+      id: animal.id,
+      url: newPhotoUrl || animal.url
+    }
+    return res.json(responseData)
+  } catch (err) {
+    console.error(err)
+    return res.status(500).json({ error: 'erro ao atualizar animal' })
+  }
+})
+
+// remove um animal pelo id
+router.delete('/:id', async (req, res) => {
+  const { id } = req.params
+  try {
+    const ok = await removeAnimal(id)
+    if (!ok) {
+      return res.status(404).json({ error: 'animal não encontrado' })
+    }
+    return res.status(204).send()
+  } catch (err) {
+    console.error(err)
+    return res.status(500).json({
+      error: 'erro ao excluir animal',
+      details: err.message
+    })
+  }
+})
+
+module.exports = router

@@ -1,8 +1,10 @@
-// src/frontend/src/pages/admin/AddPet.js
+// frontend\src\pages\admin\AddPet.js
+
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { API_BASE } from '../../utils/api'
 
+// função para adicionar um novo pet
 export default function AddPet() {
   const navigate = useNavigate()
   const [orgs, setOrgs] = useState([])
@@ -68,12 +70,10 @@ export default function AddPet() {
     
     const formDataToSend = new FormData()
     
-    // Adiciona campos do formulário
     Object.entries(formData).forEach(([key, value]) => {
       formDataToSend.append(key, value)
     })
     
-    // Adiciona arquivo de imagem
     if (imageFile) {
       formDataToSend.append('image', imageFile)
     }

@@ -1,11 +1,13 @@
+// frontend\src\pages\detail\index.js
+
 import { useEffect, useState } from 'react';
 import { getPetDetails } from '../../api/petfinder';
 import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { sendAdoptionRequest } from '../../api/adoptionRequests'
 import { API_BASE } from '../../utils/api'
 
+// página de detalhes do pet
 const PetDetailsPage = () => {
-  //window.scrollTo(0, 0);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -24,6 +26,7 @@ const PetDetailsPage = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
     
+    // obtém dados do pet
     async function getPetsData() {
       try {
         const petsData = await getPetDetails(id);
@@ -38,6 +41,7 @@ const PetDetailsPage = () => {
     getPetsData();
   }, [id]);
 
+  // manipula o clique no botão de adoção
   const handleAdoptionClick = () => {
     setShowAdoptionForm(true);
     window.scrollTo({
@@ -46,10 +50,12 @@ const PetDetailsPage = () => {
     });
   };
 
+  // manipula o clique no botão de voltar
   const handleGoBack = () => {
     navigate('/');
   };
 
+  // manipula mudanças no formulário de adoção
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -58,6 +64,7 @@ const PetDetailsPage = () => {
     }));
   };
 
+  // manipula o envio do formulário de adoção
   const handleFormSubmit = async e => {
     e.preventDefault()
 

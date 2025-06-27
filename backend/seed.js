@@ -1,8 +1,9 @@
-// seed.js
+// backend/seed.js
+
 require('dotenv').config();
-const fs   = require('fs').promises;
-const path = require('path');
-const bcrypt = require('bcrypt');
+const fs      = require('fs').promises;
+const path    = require('path');
+const bcrypt  = require('bcrypt');
 const { Pool } = require('pg');
 
 const pool = new Pool({
@@ -10,8 +11,9 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
+// gera hash de senha para organizações que ainda não têm
 async function seedOrganizationCredentials() {
-  console.log('🔐 Seeding organization credentials...');
+  console.log('🔐 seeding organization credentials...');
   const { rows: orgs } = await pool.query(
     `SELECT id, cnpj FROM organizations WHERE password_hash IS NULL`
   );
@@ -27,32 +29,33 @@ async function seedOrganizationCredentials() {
     );
     console.log(` ONG ${id}: hash gerado de "${plain}"`);
   }
-  console.log('✅ Organization credentials seeded');
+  console.log('✅ organization credentials seeded');
 }
 
+// insere dados de animais do mock no banco
 async function seedAnimals() {
-  console.log('🦴 Seeding animals...');
+  console.log('🦴 seeding animals...');
   const file = path.join(__dirname, 'src', 'mocks', 'data', 'animals.json');
   const { animals } = JSON.parse(await fs.readFile(file, 'utf8'));
-  const allowed = ['Cat','Dog'];
+  const allowed = ['Cat', 'Dog'];
 
   for (const a of animals) {
     if (!allowed.includes(a.type)) {
-      console.warn(`⏭️ Skip tipo inválido: ${a.type} (id=${a.id})`);
+      console.warn(`⏭️ skip tipo inválido: ${a.type} (id=${a.id})`);
       continue;
     }
-    // encontre a PK da ONG
+    // obtém chave estrangeira da organização
     const { rows: orgRows } = await pool.query(
       `SELECT id FROM organizations WHERE cnpj = $1`,
       [a.organization_id]
     );
     if (!orgRows.length) {
-      console.warn(`⚠️ ONG não encontrada para CNPJ=${a.organization_id} (animal ${a.id})`);
+      console.warn(`⚠️ ong não encontrada para cnpj=${a.organization_id} (animal ${a.id})`);
       continue;
     }
     const orgFk = orgRows[0].id;
 
-    // insira o animal (sem os campos children/dogs/cats)
+    // insere animal ignorando conflitos de id
     await pool.query(
       `INSERT INTO animals(
          id,
@@ -96,7 +99,6 @@ async function seedAnimals() {
         a.colors.primary,
         a.colors.secondary,
         a.colors.tertiary,
-        // usando a.breeds.breed (boolean)
         Boolean(a.breeds.primary || a.breeds.mixed),
         a.attributes.spayed_neutered,
         a.attributes.shots_current,
@@ -108,9 +110,10 @@ async function seedAnimals() {
     );
   }
 
-  console.log('✅ Animals seeded');
+  console.log('✅ animals seeded');
 }
 
+// executa a seed de credenciais e de animais
 async function main() {
   try {
     await seedOrganizationCredentials();

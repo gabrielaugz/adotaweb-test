@@ -1,3 +1,5 @@
+// frontend\src\components\search\index.js
+
 import React, { useRef } from 'react';
 import { useNavigate, createSearchParams } from 'react-router-dom';
 
@@ -12,6 +14,7 @@ const Search = () => {
       city: searchInputRef.current.value.trim() 
     };
 
+    // query string para a URL
     const query = createSearchParams(searchQuery);
     navigate({
       pathname: '/search',

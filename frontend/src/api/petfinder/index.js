@@ -1,8 +1,8 @@
-// src/frontend/src/api/petfinder/index.js
+// frontend\src\api\petfinder\index.js
 
-// Use apenas a base da URL, sem o "/api" final
 const API = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
+// função auxiliar para buscar JSON de uma URL
 async function fetchJSON(url) {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status} em ${url}`);
@@ -11,7 +11,7 @@ async function fetchJSON(url) {
 
 export const tipos = ['Cat','Dog'];
 
-// Busca coleção de animais via query params
+// busca coleção de animais via query params
 export const getPets = async ({
   type = '',
   city = '',
@@ -33,11 +33,11 @@ export const getPets = async ({
   if (breed)      params.append('breed',      breed);
   if (puppy)      params.append('puppy',      puppy);
 
-  // Inclui o "/api" aqui
+  // inclui o "/api" aqui
   const { animals } = await fetchJSON(`${API}/api/animals?${params}`);
   return animals;
 };
 
-// Detalhe de um pet pelo ID
+// detalhe de um pet pelo ID
 export const getPetDetails = async id =>
   fetchJSON(`${API}/api/animals/${id}`);

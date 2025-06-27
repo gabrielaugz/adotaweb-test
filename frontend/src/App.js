@@ -1,3 +1,5 @@
+// frontend\src\App.js
+
 import Root from './components/root'
 import HomePage from './pages/home'
 import SearchPage from './pages/search'
@@ -18,6 +20,7 @@ import {
   Route
 } from 'react-router-dom'
 
+// route principal da aplicação
 const appRouter = createBrowserRouter(
   createRoutesFromElements(
     <Route path='/' element={<Root />}>

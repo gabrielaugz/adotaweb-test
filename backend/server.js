@@ -1,7 +1,9 @@
+// backend\server.js
+
 require('dotenv').config()
 const express = require('express')
 const path    = require('path')
-const fs      = require('fs') // Adicionado para manipulação de arquivos
+const fs      = require('fs')
 const pool               = require('./src/lib/db')
 const adminAnimalsRoutes = require('./src/routes/adminAnimals')
 const orgRoutes          = require('./src/routes/organizations')
@@ -9,7 +11,7 @@ const adoptionRoutes     = require('./src/routes/adoptionRequests')
 
 const app = express()
 
-// Garante que a pasta uploads exista
+// garante que a pasta uploads exista
 const uploadDir = './uploads'
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true })
@@ -29,9 +31,7 @@ app.use((req, res, next) => {
   next()
 })
 
-// ─── Rotas de API ────────────────────────────────────────────
-
-// Listagem pública de animais
+// listagem pública de animais
 app.get('/api/animals', async (req, res) => {
   const {
     type        = '',
@@ -135,6 +135,7 @@ app.get('/api/animals', async (req, res) => {
   }
 })
 
+// detalhes de um animal específico
 app.get('/api/animals/:id', async (req, res) => {
   const { id } = req.params
   const detailSql = `
@@ -230,20 +231,20 @@ app.get('/api/animals/:id', async (req, res) => {
   }
 })
 
-// ─── Montagem de Rotas ────────────────────────────────────────────
+// rotas crud do administrador
 app.use('/api/organizations', orgRoutes)
 console.log('>>> Montando rota ADMIN CRUD em: /api/admin/animals')
 app.use('/api/admin/animals', adminAnimalsRoutes)
 app.use('/api/adoptions', adoptionRoutes)
 
-// ─── SERVE REACT EM PRODUÇÃO ─────────────────────────────────
+// serve o frontend estático
 const buildPath = path.join(__dirname, '..', 'frontend', 'build')
 app.use(express.static(buildPath))
 app.get(/^\/(?!api).*/, (_req, res) => {
   res.sendFile(path.join(buildPath, 'index.html'))
 })
 
-// Inicia o servidor
+// inicia o servidor na porta definida ou 3001 por padrão
 const port = process.env.PORT || 3001
 app.listen(port, () => {
   console.log(`🐶 API rodando na porta ${port}`)

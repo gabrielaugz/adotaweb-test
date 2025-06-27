@@ -1,3 +1,5 @@
+// frontend\src\components\navigation\index.js
+
 import React from 'react';
 import Logo from '../../assets/AdotaWeb2.png';
 import Search from '../search';
@@ -30,7 +32,7 @@ const Navigation = ({ logoHeight = 40 }) => {
         </li>
 
         {tipos.map(type => {
-          const slug = type.toLowerCase(); // 'dog' ou 'cat'
+          const slug = type.toLowerCase(); // 'dog' ou 'cat' em minúsculas
           const label = type === 'Dog'
             ? 'Cachorros'
             : 'Gatos';

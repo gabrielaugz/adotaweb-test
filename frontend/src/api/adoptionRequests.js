@@ -1,6 +1,8 @@
-// src/frontend/src/api/adoptionRequests.js
+// frontend\src\api\adoptionRequests.js
+
 import { API_BASE } from '../utils/api'
 
+// função auxiliar para buscar JSON de uma URL
 async function fetchJSON(url, options) {
   const res = await fetch(url, options)
   if (!res.ok) {
@@ -10,10 +12,7 @@ async function fetchJSON(url, options) {
   return res.json()
 }
 
-/**
- * Envia uma nova solicitação
- * @param {{ petId: number, name, email, phone, address, experience, message }} data
- */
+// envia uma solicitação de adoção
 export function sendAdoptionRequest(data) {
   return fetchJSON(
     `${API_BASE}/api/adoptions`,
@@ -25,10 +24,7 @@ export function sendAdoptionRequest(data) {
   )
 }
 
-/**
- * Busca todas as solicitações de um pet
- * @param {number} petId
- */
+// busca solicitações de adoção para um pet específico
 export function getAdoptionRequests(petId) {
   return fetchJSON(`${API_BASE}/api/adoptions/${petId}`)
 }

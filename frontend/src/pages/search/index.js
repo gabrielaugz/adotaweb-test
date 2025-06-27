@@ -1,3 +1,5 @@
+// frontend\src\pages\search\index.js
+
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { getPets } from '../../api/petfinder';
@@ -6,7 +8,6 @@ import Pet from '../../components/pet';
 import '../home/home.css';
 
 export default function SearchPage() {
-  // scroll top on mount
   useEffect(() => window.scrollTo(0, 0), []);
   const gridRef = useRef(null)
 
@@ -37,6 +38,7 @@ export default function SearchPage() {
       });
   }, [cityQuery, vaccinated, neutered, breed, puppy]);
 
+  // função para atualizar um filtro específico
   function updateFilter(key, value) {
     const next = new URLSearchParams(searchParams);
     if (!value) next.delete(key);

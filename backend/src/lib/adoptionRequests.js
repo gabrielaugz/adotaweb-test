@@ -1,10 +1,10 @@
 // backend/src/lib/adoptionRequests.js
+
 const pool = require('./db')
 
-/**
- * Grava uma solicitação no banco
- */
 async function createRequest(data) {
+
+// grava uma nova solicitação de adoção\async function createRequest(data) {
   const sql = `
     INSERT INTO adoption_requests
       (pet_id, name, email, phone, address, experience, message, created_at)
@@ -23,9 +23,7 @@ async function createRequest(data) {
   return rows[0]
 }
 
-/**
- * Lê todas as solicitações de um pet
- */
+// busca todas as solicitações de um pet ordenadas da mais recente
 async function getRequestsByPet(petId) {
   const { rows } = await pool.query(
     `SELECT id, name, email, phone, address, experience, message, created_at, status
@@ -37,11 +35,7 @@ async function getRequestsByPet(petId) {
   return rows
 }
 
-/**
- * Remove uma solicitação de adoção pelo seu ID
- * @param {number} requestId
- * @returns {boolean} true se excluiu, false se não encontrou
- */
+// exclui uma solicitação pelo id e retorna true se removida
 async function removeRequest(requestId) {
   const { rowCount } = await pool.query(
     `DELETE FROM adoption_requests
@@ -51,8 +45,8 @@ async function removeRequest(requestId) {
   return rowCount > 0
 }
 
+// atualiza campos de uma solicitação e retorna o registro atualizado
 async function updateRequest(requestId, fields) {
-  // fields poderá ser { status: 'approved' } ou { status:'denied' }
   const keys = Object.keys(fields)
   if (keys.length === 0) return null
 
@@ -70,6 +64,7 @@ async function updateRequest(requestId, fields) {
   return rows[0] || null
 }
 
+// nega todas as solicitações pendentes de um pet, exceto a aprovada
 async function denyOtherRequests(petId, approvedRequestId) {
   await pool.query(
     `UPDATE adoption_requests

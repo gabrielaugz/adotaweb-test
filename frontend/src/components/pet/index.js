@@ -1,3 +1,5 @@
+// frontend\src\components\pet\index.js
+
 import React from 'react';
 
 const Pet = ({ animal }) => {

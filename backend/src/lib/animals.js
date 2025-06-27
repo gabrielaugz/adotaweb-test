@@ -1,9 +1,8 @@
-// src/backend/src/lib/animals.js
+// backend\src\lib\animals.js
+
 const pool = require('./db')
 
-/**
- * Lista todos os animais, incluindo dados da ONG
- */
+// lista todos os animais com dados da ong
 async function getAll() {
   const { rows } = await pool.query(
     `
@@ -20,20 +19,18 @@ async function getAll() {
   return rows
 }
 
+// busca um animal pelo id, retorna null se não existir
 async function getOne(id) {
   try {
-    // CORREÇÃO: use pool em vez de db
     const { rows } = await pool.query('SELECT * FROM animals WHERE id = $1', [id]);
     return rows[0] || null;
   } catch (err) {
-    console.error('Erro ao buscar animal:', err);
+    console.error('erro ao buscar animal:', err);
     throw err;
   }
 }
 
-/**
- * Cria um novo animal
- */
+// cria um novo animal e retorna o registro inserido
 async function create(data) {
   const {
     organization_fk,
@@ -105,9 +102,7 @@ async function create(data) {
   return rows[0]
 }
 
-/**
- * Atualiza um animal pelo ID
- */
+// atualiza campos de um animal e retorna o registro atualizado
 async function update(id, data) {
   const fields = Object.keys(data)
   if (fields.length === 0) return null
@@ -127,24 +122,19 @@ async function update(id, data) {
   return rows[0] || null
 }
 
-/**
- * Exclui um animal pelo ID
- */
+// exclui o animal e suas fotos, retorna true se excluído
 async function remove(id) {
   try {
-    // PRIMEIRO: excluir fotos associadas
-    await pool.query('DELETE FROM photos WHERE animal_id = $1', [id]);
-    
-    // DEPOIS: excluir o animal
+    await pool.query('DELETE FROM photos WHERE animal_id = $1', [id])
     const { rowCount } = await pool.query(
       `DELETE FROM animals WHERE id = $1`,
       [id]
-    );
-    return rowCount > 0;
+    )
+    return rowCount > 0
   } catch (err) {
-    console.error('Erro ao excluir animal:', err);
-    throw err;
+    console.error('erro ao excluir animal:', err)
+    throw err
   }
 }
 
-module.exports = { getAll, create, update, remove, getOne }
+module.exports = { getAll, getOne, create, update, remove }
