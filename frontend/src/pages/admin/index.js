@@ -185,41 +185,77 @@ export default function AdminPage() {
                       )}
                     </svg>
                   </button>
-                </td>
-              </tr>
-              {openPetId === pet.id && (
-                <tr><td colSpan="5">
-                  {requestsByPet[pet.id]?.length > 0 ? (
-                    <ul className="requests-list">
-                      {requestsByPet[pet.id].map(request => {
-                        const statusInfo = {
-                          approved: { text: '✓ APROVADA', color: 'green' },
-                          denied: { text: '✗ NEGADA', color: 'red' },
-                          pending: { text: '⏳ PENDENTE', color: 'orange' }
-                        }[request.status] || { text: '⏳ PENDENTE', color: 'orange' }
-                        return (
-                          <li key={request.id} style={{ borderLeft: `4px solid ${statusInfo.color}` }}>
-                            <div className="request-header">
-                              <strong>{request.name}</strong> ({request.email})
-                              <span className="status-text" style={{ color: statusInfo.color }}>{statusInfo.text}</span>
-                            </div>
-                            <small>{new Date(request.created_at).toLocaleString()}</small>
-                            <p>{request.message}</p>
-                            {request.status === 'pending' && (
-                              <div className="request-actions">
-                                <button onClick={() => handleApproveRequest(pet.id, request.id)} className="btn-approve">Aprovar</button>
-                                <button onClick={() => handleDenyRequest(pet.id, request.id)} className="btn-deny">Negar</button>
-                              </div>
-                            )}
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  ) : (
-                    <p className="no-requests">Nenhuma solicitação encontrada para este animal.</p>
+                  </td>
+                  </tr>
+
+                  {openPetId === pet.id && (
+                    <tr>
+                      <td colSpan="5">
+                        {requestsByPet[pet.id]?.length > 0 ? (
+                          <div className="requests-panel">
+                            <ul className="requests-list">
+                              {requestsByPet[pet.id].map(request => {
+                                const statusInfo = {
+                                  approved: { text: '✓ APROVADA', color: 'green' },
+                                  denied: { text: '✗ NEGADA', color: 'red' },
+                                  pending: { text: '⏳ PENDENTE', color: 'orange' }
+                                }[request.status] || { text: '⏳ PENDENTE', color: 'orange' };
+
+                                return (
+                                  <li
+                                    key={request.id}
+                                    className="request-card"
+                                    style={{ borderLeft: `4px solid ${statusInfo.color}` }}
+                                  >
+                                    <div className="request-card-header">
+                                      <div className="request-user">
+                                        <strong>{request.name}</strong>
+                                        <br />
+                                        <span className="email">{request.email}</span>
+                                      </div>
+                                      <span
+                                        className="status-text"
+                                        style={{ color: statusInfo.color }}
+                                      >
+                                        {statusInfo.text}
+                                      </span>
+                                    </div>
+
+                                    <div className="request-meta">
+                                      <small>{new Date(request.created_at).toLocaleString()}</small>
+                                    </div>
+
+                                    <p className="request-message">{request.message}</p>
+
+                                    {request.status === 'pending' && (
+                                      <div className="request-actions">
+                                        <button
+                                          onClick={() => handleApproveRequest(pet.id, request.id)}
+                                          className="btn-approve"
+                                        >
+                                          Aprovar
+                                        </button>
+                                        <button
+                                          onClick={() => handleDenyRequest(pet.id, request.id)}
+                                          className="btn-deny"
+                                        >
+                                          Negar
+                                        </button>
+                                      </div>
+                                    )}
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        ) : (
+                          <p className="no-requests">
+                            Nenhuma solicitação encontrada para este animal.
+                          </p>
+                        )}
+                      </td>
+                    </tr>
                   )}
-                </td></tr>
-              )}
             </React.Fragment>
           ))}
         </tbody>
