@@ -1465,8 +1465,7 @@ nav {
   }
 }
 
-/*-----------------------------------------------------------------*/
-/*formulario descrição pagina adm */
+/* Formulário descrição página admin - Alinhado ---------------------------------------------------------------------------*/
 .requests-panel {
   padding: 1rem;
 }
@@ -1482,17 +1481,23 @@ nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  gap: 1rem;
+  flex-direction: row;
 }
 
 .request-user {
   font-size: 0.9rem;
+  white-space: nowrap;
+  flex: 1;
 }
 
 .request-meta {
   font-size: 0.75rem;
   color: #555;
   margin: 0.5rem 0;
+  flex: 2;
+  word-break: break-word;
 }
 
 .request-message {
@@ -1500,37 +1505,43 @@ nav {
 }
 
 .request-actions {
-  margin-top: 0.5rem;
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.btn-approve, .btn-deny {
+  padding: 0.4rem 0.8rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  white-space: nowrap;
 }
 
 .btn-approve {
   background-color: #4CAF50;
   color: white;
-  padding: 0.4rem 0.8rem;
-  border: none;
-  border-radius: 4px;
 }
 
 .btn-deny {
   background-color: #f44336;
   color: white;
-  padding: 0.4rem 0.8rem;
-  border: none;
-  border-radius: 4px;
 }
 
-@media (max-width: 600px) {
+/* Responsividade */
+@media (max-width: 768px) {
   .request-card-header {
     flex-direction: column;
     align-items: flex-start;
   }
 
   .request-actions {
-    flex-direction: column;
+    justify-content: flex-start;
+    width: 100%;
   }
 }
+
 
 /* Estilos específicos para a página AddPet -------------------------------------------------------------------------*/
 .add-pet-container {
