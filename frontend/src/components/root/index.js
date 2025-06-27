@@ -2,8 +2,7 @@ import React from 'react';
 import Navigation from '../navigation';
 import { Outlet } from 'react-router-dom';
 import Footer from "../footer";
-import ScrollToTop from './ScrollToTop';
-
+import ScrollToTop from '../components/ScrollToTop';
 
 const Root = () => {
     return (
