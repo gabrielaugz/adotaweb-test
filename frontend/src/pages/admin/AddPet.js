@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { API_BASE } from '../../utils/api'
-import './AddPet.css'
 
 export default function AddPet() {
   const navigate = useNavigate()
