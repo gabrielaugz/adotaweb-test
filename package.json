@@ -1,5 +1,10 @@
 {
   "dependencies": {
     "cloudinary": "^2.7.0"
-  }
+  },
+
+  "scripts": {
+    "render:build": "cd frontend && npm install && npm run build && cd ../backend && npm install",
+    "render:start": "cd backend && node server.js"
+  } 
 }
